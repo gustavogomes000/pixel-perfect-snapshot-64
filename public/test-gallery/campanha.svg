@@ -1,0 +1,10 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="hsl(50 65% 94%)"/>
+  <rect x="80" y="80" width="1040" height="740" rx="44" fill="hsl(350 68% 55%)"/>
+  <rect x="160" y="160" width="880" height="580" rx="34" fill="hsl(0 0% 100% / 0.1)" stroke="hsl(0 0% 100% / 0.18)" stroke-width="4"/>
+  <path d="M204 280H995" stroke="hsl(0 0% 100% / 0.75)" stroke-width="22" stroke-linecap="round"/>
+  <path d="M204 350H874" stroke="hsl(0 0% 100% / 0.45)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M204 420H930" stroke="hsl(0 0% 100% / 0.45)" stroke-width="18" stroke-linecap="round"/>
+  <text x="198" y="620" fill="hsl(0 0% 100%)" font-family="Georgia, serif" font-size="84" font-weight="700">Imagem de teste</text>
+  <text x="202" y="678" fill="hsl(0 0% 100%)" font-family="Arial, sans-serif" font-size="31" opacity="0.9">Campanha • simulação para ocupação visual</text>
+</svg>

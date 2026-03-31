@@ -1,0 +1,8 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="hsl(270 28% 95%)"/>
+  <rect x="70" y="70" width="1060" height="760" rx="46" fill="hsl(260 39% 31%)"/>
+  <path d="M170 214L358 162L504 252L682 180L846 274L1022 200" stroke="hsl(47 94% 73%)" stroke-width="18" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M166 508L336 418L508 520L678 430L860 540L1030 454" stroke="hsl(0 0% 100% / 0.7)" stroke-width="20" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="120" y="688" fill="hsl(0 0% 100%)" font-family="Georgia, serif" font-size="84" font-weight="700">Imagem de teste</text>
+  <text x="124" y="748" fill="hsl(0 0% 100%)" font-family="Arial, sans-serif" font-size="31" opacity="0.88">Território • placeholder para prévia de escala</text>
+</svg>
