@@ -1,0 +1,15 @@
+<svg width="1200" height="900" viewBox="0 0 1200 900" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="900" fill="hsl(154 38% 94%)"/>
+  <rect x="76" y="76" width="1048" height="748" rx="42" fill="url(#bg)"/>
+  <path d="M132 598C248 487 378 421 541 456C700 490 841 611 1068 468" stroke="hsl(0 0% 100% / 0.7)" stroke-width="24" stroke-linecap="round"/>
+  <path d="M166 320H1034" stroke="hsl(0 0% 100% / 0.3)" stroke-width="18" stroke-linecap="round"/>
+  <path d="M166 384H944" stroke="hsl(0 0% 100% / 0.3)" stroke-width="18" stroke-linecap="round"/>
+  <text x="124" y="690" fill="hsl(0 0% 100%)" font-family="Georgia, serif" font-size="84" font-weight="700">Imagem de teste</text>
+  <text x="128" y="748" fill="hsl(0 0% 100%)" font-family="Arial, sans-serif" font-size="31" opacity="0.9">Encontro • placeholder para revisão do layout</text>
+  <defs>
+    <linearGradient id="bg" x1="76" y1="76" x2="1124" y2="824" gradientUnits="userSpaceOnUse">
+      <stop stop-color="hsl(148 46% 39%)"/>
+      <stop offset="1" stop-color="hsl(178 61% 33%)"/>
+    </linearGradient>
+  </defs>
+</svg>
