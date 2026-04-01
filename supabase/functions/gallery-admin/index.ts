@@ -6,8 +6,8 @@ const corsHeaders = {
 };
 
 // External Supabase project credentials
-const EXT_URL = Deno.env.get("EXT_SUPABASE_URL")!;
-const EXT_SERVICE_KEY = Deno.env.get("EXT_SUPABASE_SERVICE_ROLE_KEY")!;
+const EXT_URL = Deno.env.get("EXT_SUPABASE_URL") || Deno.env.get("EXTERNAL_SUPABASE_URL")!;
+const EXT_SERVICE_KEY = Deno.env.get("EXT_SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("EXTERNAL_SUPABASE_SERVICE_KEY")!;
 
 function getExtClient() {
   return createClient(EXT_URL, EXT_SERVICE_KEY);
