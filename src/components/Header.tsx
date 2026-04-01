@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Instagram, Facebook, MessageCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useGaleriaConfig } from "@/hooks/useGaleriaConfig";
+import logoSarelli from "@/assets/logo-sarelli.png";
 
 const baseNavItems = [
   { label: "Sobre", path: "/sobre" },
