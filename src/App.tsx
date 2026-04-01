@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { forwardRef, lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -23,40 +23,44 @@ const ValidarCaptura = lazy(() => import("./pages/ValidarCaptura"));
 const queryClient = new QueryClient();
 
 const PageLoader = () => (
-  <div className="flex items-center justify-center min-h-screen">
+  <div className="flex min-h-screen items-center justify-center">
     <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
   </div>
 );
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Sonner />
-      <BrowserRouter>
-        <TrackingProvider>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/sobre" element={<Sobre />} />
-              <Route path="/agenda" element={<Agenda />} />
-              <Route path="/redes-sociais" element={<RedesSociais />} />
-              <Route path="/integracao" element={<Integracao />} />
-              <Route path="/contato" element={<Contato />} />
-              <Route path="/galeria" element={<GaleriaPublica />} />
-              <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
-              <Route path="/admin-login" element={<Navigate to="/admin/login" replace />} />
-              <Route path="/admin/login" element={<AdminLoginPage />} />
-              <Route path="/admin/galeria" element={<Gallery />} />
-              <Route path="/admin/formularios" element={<Forms />} />
-              <Route path="/admin/configuracoes" element={<SettingsPage />} />
-              <Route path="/validar-captura" element={<ValidarCaptura />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </TrackingProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = forwardRef<HTMLDivElement>(function App(_, ref) {
+  return (
+    <div ref={ref} className="contents">
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Sonner />
+          <BrowserRouter>
+            <TrackingProvider>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/sobre" element={<Sobre />} />
+                  <Route path="/agenda" element={<Agenda />} />
+                  <Route path="/redes-sociais" element={<RedesSociais />} />
+                  <Route path="/integracao" element={<Integracao />} />
+                  <Route path="/contato" element={<Contato />} />
+                  <Route path="/galeria" element={<GaleriaPublica />} />
+                  <Route path="/admin" element={<Navigate to="/admin/login" replace />} />
+                  <Route path="/admin-login" element={<Navigate to="/admin/login" replace />} />
+                  <Route path="/admin/login" element={<AdminLoginPage />} />
+                  <Route path="/admin/galeria" element={<Gallery />} />
+                  <Route path="/admin/formularios" element={<Forms />} />
+                  <Route path="/admin/configuracoes" element={<SettingsPage />} />
+                  <Route path="/validar-captura" element={<ValidarCaptura />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </Suspense>
+            </TrackingProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </div>
+  );
+});
 
 export default App;
