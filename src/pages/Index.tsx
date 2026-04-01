@@ -136,16 +136,7 @@ const Index = () => {
               </ScrollReveal>
 
               <ScrollReveal delay={0.1}>
-                <h1 className="mt-5 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-black leading-tight">
-                  Dra. Fernanda{" "}
-                  <span className="text-black">Sarelli</span>
-                </h1>
-              </ScrollReveal>
-
-              <ScrollReveal delay={0.15}>
-                <p className="mt-2 text-lg font-bold uppercase tracking-wider text-black">
-                  CHAMA A DOUTORA
-                </p>
+                <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="mt-5 max-w-xs sm:max-w-sm md:max-w-md w-full" />
               </ScrollReveal>
 
               <ScrollReveal delay={0.2}>

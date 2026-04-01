@@ -31,8 +31,8 @@ const Header = () => {
   return (
     <header className="sticky top-0 z-50 bg-background border-b border-border/50">
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center">
-          <img src={logoSarelli} alt="Dra. Fernanda Sarelli" className="h-10 md:h-12 w-auto" />
+        <Link to="/" className="text-lg font-bold text-foreground">
+          Dra. Fernanda Sarelli
         </Link>
 
         {/* Social icons + Nav desktop */}
