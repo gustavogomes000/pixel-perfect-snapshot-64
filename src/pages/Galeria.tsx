@@ -131,6 +131,20 @@ const GaleriaPublica = () => {
     videoStartTime.current = 0;
   }, []);
 
+  // Auto-open photo from ?foto= query param
+  useEffect(() => {
+    if (autoOpenedRef.current || fotos.length === 0) return;
+    const fotoId = searchParams.get("foto");
+    if (fotoId) {
+      const foto = fotos.find(f => f.id === fotoId);
+      if (foto) {
+        autoOpenedRef.current = true;
+        openLightbox(foto);
+      }
+    }
+  }, [fotos, searchParams, openLightbox]);
+
+
   const closeLightbox = useCallback(() => {
     trackVideoDuration();
     if (videoRef.current) {
