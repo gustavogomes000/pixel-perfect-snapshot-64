@@ -201,7 +201,7 @@ const Index = () => {
                   <img
                     src={PHOTO_URL}
                     alt="Dra. Fernanda Sarelli, advogada e pré-candidata a Deputada Estadual por Goiás"
-                    className={`h-full w-full object-cover transition-opacity duration-500 ${
+                    className={`h-full w-full object-cover object-top transition-opacity duration-500 ${
                       heroImgLoaded ? "opacity-100" : "opacity-0"
                     }`}
                     fetchPriority="high"
