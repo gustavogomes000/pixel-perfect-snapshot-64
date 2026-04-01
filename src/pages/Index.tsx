@@ -261,7 +261,7 @@ const Index = () => {
               <span className="ml-2 text-sm text-muted-foreground">Carregando eventos...</span>
             </div>
           ) : eventos.length === 0 ? (
-            <p className="text-center text-muted-foreground py-10">{eventosError || "Nenhum evento próximo no momento."}</p>
+            <p className="text-center text-muted-foreground py-10">{eventosError ? "Agenda temporariamente indisponível." : "Nenhum evento próximo no momento."}</p>
           ) : (
             <div className="mt-10 space-y-4 max-w-3xl mx-auto">
               {eventos.map((e, i) => (
