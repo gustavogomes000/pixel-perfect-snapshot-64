@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Image as ImageIcon, Play, X, Loader2, Share2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseDb";
 import { toast } from "sonner";
@@ -72,6 +73,7 @@ const SkeletonCard = () => (
 );
 
 const GaleriaPublica = () => {
+  const [searchParams] = useSearchParams();
   const [albuns, setAlbuns] = useState<Album[]>([]);
   const [fotos, setFotos] = useState<Foto[]>([]);
   const [selectedAlbum, setSelectedAlbum] = useState<string | null>(null);
@@ -82,6 +84,7 @@ const GaleriaPublica = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoStartTime = useRef<number>(0);
   const trackedPlayRef = useRef<string | null>(null);
+  const autoOpenedRef = useRef(false);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -127,6 +130,20 @@ const GaleriaPublica = () => {
     trackedPlayRef.current = null;
     videoStartTime.current = 0;
   }, []);
+
+  // Auto-open photo from ?foto= query param
+  useEffect(() => {
+    if (autoOpenedRef.current || fotos.length === 0) return;
+    const fotoId = searchParams.get("foto");
+    if (fotoId) {
+      const foto = fotos.find(f => f.id === fotoId);
+      if (foto) {
+        autoOpenedRef.current = true;
+        openLightbox(foto);
+      }
+    }
+  }, [fotos, searchParams, openLightbox]);
+
 
   const closeLightbox = useCallback(() => {
     trackVideoDuration();
@@ -378,14 +395,14 @@ const GaleriaPublica = () => {
                 </div>
                 <button
                   onClick={async () => {
-                    const galeriaUrl = `${window.location.origin}/galeria`;
-                    const texto = `${lightbox.titulo} — Fernanda Sarelli\n\n📷 Veja a foto: ${lightbox.url_foto}\n\n📸 Ver mais fotos: ${galeriaUrl}`;
+                    const fotoUrl = `${window.location.origin}/galeria?foto=${lightbox.id}`;
+                    const texto = `${lightbox.titulo} — Fernanda Sarelli\n\n📷 Veja a foto: ${fotoUrl}`;
                     if (navigator.share) {
                       try {
                         await navigator.share({
                           title: lightbox.titulo,
                           text: texto,
-                          url: galeriaUrl,
+                          url: fotoUrl,
                         });
                       } catch { /* cancelled */ }
                     } else {

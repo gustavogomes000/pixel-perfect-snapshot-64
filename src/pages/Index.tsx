@@ -573,14 +573,14 @@ const Index = () => {
                 </div>
                 <button
                   onClick={async () => {
-                    const galeriaUrl = `${window.location.origin}/galeria`;
-                    const texto = `${lightbox.titulo} — Fernanda Sarelli\n\n📷 Veja a foto: ${lightbox.url_foto}\n\n📸 Ver mais fotos: ${galeriaUrl}`;
+                    const fotoUrl = `${window.location.origin}/galeria?foto=${lightbox.id}`;
+                    const texto = `${lightbox.titulo} — Fernanda Sarelli\n\n📷 Veja a foto: ${fotoUrl}`;
                     if (navigator.share) {
                       try {
                         await navigator.share({
                           title: lightbox.titulo,
                           text: texto,
-                          url: galeriaUrl,
+                          url: fotoUrl,
                         });
                       } catch { /* cancelled */ }
                     } else {
