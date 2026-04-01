@@ -425,6 +425,7 @@ export type Database = {
           criado_em: string | null
           id: string
           lideranca_id: string | null
+          municipio_id: string | null
           observacoes: string | null
           pessoa_id: string
           secao_fiscal: string | null
@@ -438,6 +439,7 @@ export type Database = {
           criado_em?: string | null
           id?: string
           lideranca_id?: string | null
+          municipio_id?: string | null
           observacoes?: string | null
           pessoa_id: string
           secao_fiscal?: string | null
@@ -451,6 +453,7 @@ export type Database = {
           criado_em?: string | null
           id?: string
           lideranca_id?: string | null
+          municipio_id?: string | null
           observacoes?: string | null
           pessoa_id?: string
           secao_fiscal?: string | null
@@ -471,6 +474,13 @@ export type Database = {
             columns: ["lideranca_id"]
             isOneToOne: false
             referencedRelation: "liderancas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fiscais_municipio_id_fkey"
+            columns: ["municipio_id"]
+            isOneToOne: false
+            referencedRelation: "municipios"
             referencedColumns: ["id"]
           },
           {
@@ -647,6 +657,7 @@ export type Database = {
           auth_user_id: string | null
           criado_em: string | null
           id: string
+          municipio_id: string | null
           nome: string
           superior_id: string | null
           suplente_id: string | null
@@ -658,6 +669,7 @@ export type Database = {
           auth_user_id?: string | null
           criado_em?: string | null
           id?: string
+          municipio_id?: string | null
           nome: string
           superior_id?: string | null
           suplente_id?: string | null
@@ -669,12 +681,20 @@ export type Database = {
           auth_user_id?: string | null
           criado_em?: string | null
           id?: string
+          municipio_id?: string | null
           nome?: string
           superior_id?: string | null
           suplente_id?: string | null
           tipo?: Database["public"]["Enums"]["tipo_usuario"]
         }
         Relationships: [
+          {
+            foreignKeyName: "hierarquia_usuarios_municipio_id_fkey"
+            columns: ["municipio_id"]
+            isOneToOne: false
+            referencedRelation: "municipios"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "hierarquia_usuarios_superior_id_fkey"
             columns: ["superior_id"]
@@ -695,6 +715,7 @@ export type Database = {
           id: string
           lider_principal_id: string | null
           meta_votos: number | null
+          municipio_id: string | null
           nivel: string | null
           nivel_comprometimento: string | null
           observacoes: string | null
@@ -716,6 +737,7 @@ export type Database = {
           id?: string
           lider_principal_id?: string | null
           meta_votos?: number | null
+          municipio_id?: string | null
           nivel?: string | null
           nivel_comprometimento?: string | null
           observacoes?: string | null
@@ -737,6 +759,7 @@ export type Database = {
           id?: string
           lider_principal_id?: string | null
           meta_votos?: number | null
+          municipio_id?: string | null
           nivel?: string | null
           nivel_comprometimento?: string | null
           observacoes?: string | null
@@ -761,6 +784,13 @@ export type Database = {
             columns: ["lider_principal_id"]
             isOneToOne: false
             referencedRelation: "liderancas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "liderancas_municipio_id_fkey"
+            columns: ["municipio_id"]
+            isOneToOne: false
+            referencedRelation: "municipios"
             referencedColumns: ["id"]
           },
           {
@@ -904,6 +934,30 @@ export type Database = {
         }
         Relationships: []
       }
+      municipios: {
+        Row: {
+          ativo: boolean
+          criado_em: string
+          id: string
+          nome: string
+          uf: string
+        }
+        Insert: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          nome: string
+          uf?: string
+        }
+        Update: {
+          ativo?: boolean
+          criado_em?: string
+          id?: string
+          nome?: string
+          uf?: string
+        }
+        Relationships: []
+      }
       pessoas: {
         Row: {
           atualizado_em: string
@@ -987,6 +1041,7 @@ export type Database = {
           fiscal_id: string | null
           id: string
           lideranca_id: string | null
+          municipio_id: string | null
           observacoes: string | null
           pessoa_id: string
           suplente_id: string | null
@@ -998,6 +1053,7 @@ export type Database = {
           fiscal_id?: string | null
           id?: string
           lideranca_id?: string | null
+          municipio_id?: string | null
           observacoes?: string | null
           pessoa_id: string
           suplente_id?: string | null
@@ -1009,6 +1065,7 @@ export type Database = {
           fiscal_id?: string | null
           id?: string
           lideranca_id?: string | null
+          municipio_id?: string | null
           observacoes?: string | null
           pessoa_id?: string
           suplente_id?: string | null
@@ -1033,6 +1090,13 @@ export type Database = {
             columns: ["lideranca_id"]
             isOneToOne: false
             referencedRelation: "liderancas"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "possiveis_eleitores_municipio_id_fkey"
+            columns: ["municipio_id"]
+            isOneToOne: false
+            referencedRelation: "municipios"
             referencedColumns: ["id"]
           },
           {
@@ -1223,6 +1287,35 @@ export type Database = {
           senha_hash?: string
         }
         Relationships: []
+      }
+      suplente_municipio: {
+        Row: {
+          criado_em: string
+          id: string
+          municipio_id: string
+          suplente_id: string
+        }
+        Insert: {
+          criado_em?: string
+          id?: string
+          municipio_id: string
+          suplente_id: string
+        }
+        Update: {
+          criado_em?: string
+          id?: string
+          municipio_id?: string
+          suplente_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "suplente_municipio_municipio_id_fkey"
+            columns: ["municipio_id"]
+            isOneToOne: false
+            referencedRelation: "municipios"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       suplentes: {
         Row: {
