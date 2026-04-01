@@ -3,8 +3,18 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-const CALENDAR_ICAL_URL = 'https://calendar.google.com/calendar/ical/1d0115116c881751957170d2e0a224901814fa8de5e1e53be0d0f14066da18ac%40group.calendar.google.com/public/basic.ics';
+const CALENDAR_ICAL_URLS = [
+  'https://calendar.google.com/calendar/ical/1d0115116c881751957170d2e0a224901814fa8de5e1e53be0d0f14066da18ac%40group.calendar.google.com/public/basic.ics',
+  'https://calendar.google.com/calendar/ical/1d0115116c881751957170d2e0a224901814fa8de5e1e53be0d0f14066da18ac%40group.calendar.google.com/public/full.ics',
+];
 const CALENDAR_TIME_ZONE = 'America/Sao_Paulo';
+const CALENDAR_REQUEST_HEADERS = {
+  'Accept': 'text/calendar,text/plain;q=0.9,*/*;q=0.8',
+  'Accept-Language': 'pt-BR,pt;q=0.9,en;q=0.8',
+  'Cache-Control': 'no-cache',
+  'Pragma': 'no-cache',
+  'User-Agent': 'Mozilla/5.0 (compatible; LovableAgendaBot/1.0)',
+};
 
 const MESES: Record<number, string> = {
   0: 'JAN', 1: 'FEV', 2: 'MAR', 3: 'ABR', 4: 'MAI', 5: 'JUN',
@@ -198,6 +208,38 @@ function parseICalFeed(icsText: string): CalendarEvent[] {
   return events;
 }
 
+async function fetchCalendarFeed(): Promise<string> {
+  let lastError: Error | null = null;
+
+  for (const calendarUrl of CALENDAR_ICAL_URLS) {
+    try {
+      console.log(`[google-calendar] Trying iCal URL: ${calendarUrl}`);
+
+      const response = await fetch(calendarUrl, {
+        headers: CALENDAR_REQUEST_HEADERS,
+        redirect: 'follow',
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch calendar: ${response.status}`);
+      }
+
+      const icsText = await response.text();
+      if (!icsText.includes('BEGIN:VCALENDAR')) {
+        throw new Error('Invalid calendar payload');
+      }
+
+      console.log('[google-calendar] iCal text length:', icsText.length);
+      return icsText;
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Unknown calendar fetch error');
+      console.warn(`[google-calendar] Failed URL: ${calendarUrl}`, lastError.message);
+    }
+  }
+
+  throw lastError ?? new Error('Calendar unavailable');
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -209,16 +251,7 @@ Deno.serve(async (req) => {
     const filterParam = url.searchParams.get('filter');
 
     console.log('[google-calendar] Fetching iCal feed...');
-    const response = await fetch(CALENDAR_ICAL_URL, {
-      headers: { 'Accept': 'text/calendar' },
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch calendar: ${response.status}`);
-    }
-
-    const icsText = await response.text();
-    console.log('[google-calendar] iCal text length:', icsText.length);
+    const icsText = await fetchCalendarFeed();
     let events = parseICalFeed(icsText);
 
     const filter = filterParam || 'all';
