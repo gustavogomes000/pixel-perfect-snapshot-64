@@ -9,6 +9,7 @@ import { getGaleriaAtiva } from "@/hooks/useGaleriaConfig";
 import Layout from "@/components/Layout";
 import WaveDivider from "@/components/WaveDivider";
 import ScrollReveal from "@/components/ScrollReveal";
+import logoSarelli from "@/assets/logo-sarelli.png";
 
 const PHOTO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
@@ -135,16 +136,7 @@ const Index = () => {
               </ScrollReveal>
 
               <ScrollReveal delay={0.1}>
-                <h1 className="mt-5 text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold tracking-tight text-black leading-tight">
-                  Dra. Fernanda{" "}
-                  <span className="text-black">Sarelli</span>
-                </h1>
-              </ScrollReveal>
-
-              <ScrollReveal delay={0.15}>
-                <p className="mt-2 text-lg font-bold uppercase tracking-wider text-black">
-                  CHAMA A DOUTORA
-                </p>
+                <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="mt-5 max-w-xs sm:max-w-sm md:max-w-md w-full" />
               </ScrollReveal>
 
               <ScrollReveal delay={0.2}>
