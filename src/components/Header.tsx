@@ -31,7 +31,7 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 bg-background border-b border-border/50">
-      <div className="container flex h-24 items-center justify-between">
+      <div className="container flex h-[5.5rem] items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
           <img src={logoHeader} alt="Dra. Fernanda Sarelli" className="h-24 w-auto object-contain" />
         </Link>
