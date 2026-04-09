@@ -136,7 +136,8 @@ const Index = () => {
             loop
             muted
             playsInline
-            className="absolute top-0 left-0 h-full w-full object-cover object-left-top"
+            className="absolute top-0 left-0 h-full w-full object-cover"
+            style={{ objectPosition: 'left top' }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
         </div>
