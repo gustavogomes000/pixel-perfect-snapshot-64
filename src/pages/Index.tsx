@@ -11,6 +11,7 @@ import WaveDivider from "@/components/WaveDivider";
 import ScrollReveal from "@/components/ScrollReveal";
 import logoSarelli from "@/assets/logo-sarelli.png";
 import logoNovo from "@/assets/logo-novo-partido.png";
+import heroBg from "@/assets/hero-bg-bandeira.jpg";
 
 const PHOTO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
@@ -126,7 +127,11 @@ const Index = () => {
 
   return (
     <Layout>
-      <section className="gradient-hero relative overflow-hidden">
+      <section className="relative overflow-hidden">
+        <div className="absolute inset-0">
+          <img src={heroBg} alt="" className="w-full h-full object-cover" loading="eager" />
+          <div className="absolute inset-0 bg-gradient-to-b from-pink-200/40 via-transparent to-pink-300/50" />
+        </div>
         <div className="container relative z-10 py-10 sm:py-14 md:py-24">
           <div className="grid md:grid-cols-2 gap-8 md:gap-10 items-center">
             <div className="text-center md:text-left">
