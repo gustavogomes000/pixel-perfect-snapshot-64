@@ -33,7 +33,7 @@ const Header = () => {
     <header className="sticky top-0 z-50 bg-background border-b border-border/50">
       <div className="container flex h-[5rem] items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <img src={logoHeader} alt="Dra. Fernanda Sarelli" className="h-24 w-auto object-contain" />
+          <img src={logoHeader} alt="Dra. Fernanda Sarelli" className="h-[6.5rem] w-auto object-contain" />
         </Link>
 
         {/* Social icons + Nav desktop */}
