@@ -32,9 +32,9 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-50 bg-background border-b border-border/50">
-      <div className="container flex h-16 items-center justify-between">
+      <div className="container flex h-20 items-center justify-between">
         <Link to="/" className="flex items-center gap-2.5">
-          <img src={logoHeader} alt="Dra. Fernanda Sarelli" className="h-24 w-auto object-contain" />
+          <img src={logoHeader} alt="Dra. Fernanda Sarelli" className="h-28 w-auto object-contain" />
           <div className="h-8 w-px bg-border" />
           <img src={logoNovo} alt="Partido NOVO" className="h-5 w-auto object-contain" />
         </Link>
