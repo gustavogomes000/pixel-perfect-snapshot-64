@@ -35,8 +35,8 @@ const Header = () => {
       <div className="container flex h-20 items-center justify-between">
         <Link to="/" className="flex items-center gap-2 sm:gap-3">
           <img src={logoHeader} alt="Dra. Fernanda Sarelli" className="h-14 sm:h-16 lg:h-20 w-auto object-contain" />
-          <div className="hidden lg:block h-10 w-px bg-muted-foreground/30" />
-          <img src={logoNovo} alt="Partido NOVO" className="hidden lg:block h-10 xl:h-11 w-auto max-w-[110px] xl:max-w-[124px] object-contain" />
+          <div className="h-8 sm:h-9 lg:h-10 w-px bg-muted-foreground/30" />
+          <img src={logoNovo} alt="Partido NOVO" className="h-8 sm:h-9 lg:h-10 xl:h-11 w-auto max-w-[80px] sm:max-w-[95px] lg:max-w-[110px] xl:max-w-[124px] object-contain" />
         </Link>
 
         {/* Social icons + Nav desktop */}
