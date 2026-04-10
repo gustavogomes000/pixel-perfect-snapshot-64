@@ -143,7 +143,7 @@ const Index = () => {
               minHeight: '100%',
               minWidth: '100%',
               objectFit: 'cover',
-              objectPosition: 'right top',
+              objectPosition: 'left top',
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
