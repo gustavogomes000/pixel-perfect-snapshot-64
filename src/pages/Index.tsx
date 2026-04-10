@@ -147,7 +147,7 @@ const Index = () => {
 
               <ScrollReveal delay={0.2}>
                 <p className="mt-4 text-primary-foreground/80 leading-relaxed max-w-md mx-auto md:mx-0">
-                  Pré-candidata a Deputada Estadual por Goiás, com compromisso real com a defesa da mulher e da família.
+                  Pré-candidata a Deputada Estadual por Goiás pelo Partido NOVO, com compromisso real com a defesa da mulher e da família.
                 </p>
               </ScrollReveal>
 
