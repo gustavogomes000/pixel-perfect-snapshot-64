@@ -14,7 +14,7 @@ import logoSarelli from "@/assets/logo-sarelli.png";
 import logoNovo from "@/assets/logo-novo-partido.png";
 import heroBg from "@/assets/hero-bg-bandeira.jpg";
 import heroBgVideo from "@/assets/bandeira-goias-hero.mp4.asset.json";
-import heroBgVideoMobile from "@/assets/bandeira-goias-hero-mobile-v2.mp4.asset.json";
+import heroBgVideoMobile from "@/assets/bandeira-goias-hero-mobile-v3.mp4.asset.json";
 
 const PHOTO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
