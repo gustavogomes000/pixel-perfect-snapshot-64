@@ -51,7 +51,7 @@ const HeroVideoAdmin = () => {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
+      const { data } = await supabaseExt
         .from("configuracoes" as any)
         .select("valor")
         .eq("chave", CONFIG_KEY)
