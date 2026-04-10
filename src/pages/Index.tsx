@@ -168,7 +168,7 @@ const Index = () => {
                 transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
               >
                 <div className="mt-4 flex justify-center md:hidden">
-                  <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-32 sm:h-36 w-auto object-contain drop-shadow-md" />
+                  <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-44 sm:h-48 w-auto object-contain drop-shadow-md" />
                 </div>
                 <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="mt-5 max-w-xs sm:max-w-sm md:max-w-md w-full hidden md:block" />
               </motion.div>
@@ -265,7 +265,7 @@ const Index = () => {
                 transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
               >
                 <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="max-w-[260px] sm:max-w-[280px] w-full object-contain md:hidden" />
-                <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-36 sm:h-40 md:h-44 w-auto object-contain drop-shadow-md hidden md:block" />
+                <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-48 sm:h-52 md:h-56 w-auto object-contain drop-shadow-md hidden md:block" />
               </motion.div>
             </div>
           </div>
