@@ -137,9 +137,11 @@ const Index = () => {
                 </span>
               </ScrollReveal>
 
-              {/* Mobile: show NOVO logo here | Desktop: show Sarelli logo */}
+              {/* Mobile: show NOVO logo here (centered) | Desktop: show Sarelli logo */}
               <ScrollReveal delay={0.1}>
-                <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="mt-5 h-12 sm:h-14 w-auto object-contain drop-shadow-md md:hidden" />
+                <div className="mt-3 flex justify-center md:hidden">
+                  <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-10 sm:h-12 w-auto object-contain drop-shadow-md" />
+                </div>
                 <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="mt-5 max-w-xs sm:max-w-sm md:max-w-md w-full hidden md:block" />
               </ScrollReveal>
 
@@ -195,7 +197,7 @@ const Index = () => {
             </div>
 
             {/* Hero image – appears above text on mobile, beside on desktop */}
-            <div className="flex flex-col items-center justify-center order-first md:order-none mb-6 md:mb-0 gap-5">
+            <div className="flex flex-col items-center justify-center order-first md:order-none mb-2 md:mb-0 gap-3 md:gap-5">
               <div className="relative">
                 {/* Skeleton placeholder – shows instantly while image loads */}
                 <div className="h-64 w-64 sm:h-80 sm:w-80 md:h-[28rem] md:w-[28rem] rounded-full border-4 border-primary overflow-hidden shadow-2xl ring-pulse relative">
@@ -217,7 +219,7 @@ const Index = () => {
               </div>
               {/* Mobile: show Sarelli logo here | Desktop: show NOVO logo */}
               <ScrollReveal delay={0.15}>
-                <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="max-w-[200px] sm:max-w-[240px] w-full object-contain md:hidden" />
+                <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="max-w-[260px] sm:max-w-[280px] w-full object-contain md:hidden" />
                 <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-12 sm:h-14 md:h-16 w-auto object-contain drop-shadow-md hidden md:block" />
               </ScrollReveal>
             </div>
