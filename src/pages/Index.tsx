@@ -65,9 +65,6 @@ const Index = () => {
   const [lightbox, setLightbox] = useState<HomeGalleryItem | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
-  const [flagScale, setFlagScale] = useState(180);
-  const [flagOriginX, setFlagOriginX] = useState(38);
-  const [flagOriginY, setFlagOriginY] = useState(52);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { events: proximosEventos, loading: eventosLoading, error: eventosError } = useGoogleCalendar({ filter: "proximos", limit: 3 });
   const eventos = Array.isArray(proximosEventos) ? proximosEventos : [];
@@ -132,24 +129,6 @@ const Index = () => {
   return (
     <Layout>
       <section className="relative overflow-hidden">
-        <div className="fixed top-2 left-2 z-[9999] bg-black/90 text-white p-3 rounded-lg text-xs space-y-2 w-72">
-          <p className="font-bold text-sm">🎯 Ajuste Responsivo</p>
-          <div>
-            <label>Zoom: {(flagScale / 100).toFixed(2)}x</label>
-            <input type="range" min="100" max="260" value={flagScale} onChange={e => setFlagScale(Number(e.target.value))} className="w-full" />
-          </div>
-          <div>
-            <label>Origem X: {flagOriginX}%</label>
-            <input type="range" min="0" max="100" value={flagOriginX} onChange={e => setFlagOriginX(Number(e.target.value))} className="w-full" />
-          </div>
-          <div>
-            <label>Origem Y: {flagOriginY}%</label>
-            <input type="range" min="0" max="100" value={flagOriginY} onChange={e => setFlagOriginY(Number(e.target.value))} className="w-full" />
-          </div>
-          <p className="text-yellow-300 font-mono text-[10px] break-all select-all">
-            scale({(flagScale / 100).toFixed(2)}) origin({flagOriginX}% {flagOriginY}%)
-          </p>
-        </div>
         <div className="absolute inset-0 bg-primary overflow-hidden">
           <video
             src={heroBgVideo.url}
@@ -159,8 +138,8 @@ const Index = () => {
             playsInline
             className="absolute inset-0 w-full h-full object-cover"
             style={{
-              transform: `scale(${flagScale / 100})`,
-              transformOrigin: `${flagOriginX}% ${flagOriginY}%`,
+              transform: 'scale(1.33)',
+              transformOrigin: '37% 28%',
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
