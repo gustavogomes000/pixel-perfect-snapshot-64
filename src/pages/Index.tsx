@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseDb";
 import { getGaleriaAtiva } from "@/hooks/useGaleriaConfig";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useHeroVideoPosition, getVideoStyle } from "@/hooks/useHeroVideoPosition";
 import Layout from "@/components/Layout";
 import WaveDivider from "@/components/WaveDivider";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -18,12 +19,8 @@ import heroBgVideoMobile from "@/assets/bandeira-goias-hero-mobile-v3.mp4.asset.
 
 const PHOTO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
-const HERO_VIDEO_POSITION_CLASSES = [
-  "absolute inset-0 h-full w-full object-cover",
-  "origin-[50%_18%] scale-100",
-  "sm:origin-[45%_22%] sm:scale-[1.08]",
-  "lg:origin-[37%_28%] lg:scale-[1.33]",
-].join(" ");
+const MOBILE_BP = 768;
+const TABLET_BP = 1024;
 
 const bandeiras = [
   {
