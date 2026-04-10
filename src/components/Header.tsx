@@ -36,7 +36,7 @@ const Header = () => {
         <Link to="/" className="flex items-center gap-2 sm:gap-3">
           <img src={logoHeader} alt="Dra. Fernanda Sarelli" className="h-14 sm:h-16 lg:h-20 w-auto object-contain" />
           <div className="h-8 sm:h-9 lg:h-10 w-px bg-muted-foreground/30" />
-          <img src={logoNovo} alt="Partido NOVO" className="h-8 sm:h-9 lg:h-10 xl:h-11 w-auto max-w-[80px] sm:max-w-[95px] lg:max-w-[110px] xl:max-w-[124px] object-contain" />
+          <img src={logoNovo} alt="Partido NOVO" className="h-10 sm:h-12 lg:h-14 xl:h-16 w-auto max-w-[100px] sm:max-w-[120px] lg:max-w-[140px] xl:max-w-[160px] object-contain" />
         </Link>
 
         {/* Social icons + Nav desktop */}
