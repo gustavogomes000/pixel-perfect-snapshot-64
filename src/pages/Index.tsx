@@ -128,7 +128,7 @@ const Index = () => {
     <Layout>
       <section className="gradient-hero relative overflow-hidden">
         <div className="container relative z-10 py-10 sm:py-14 md:py-24">
-          <div className="grid md:grid-cols-2 gap-8 md:gap-10 items-center">
+          <div className="grid md:grid-cols-2 gap-3 md:gap-10 items-center">
             <div className="text-center md:text-left">
               <ScrollReveal>
                 <span className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground shadow-sm">
