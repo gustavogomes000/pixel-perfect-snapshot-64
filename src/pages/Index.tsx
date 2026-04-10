@@ -142,7 +142,7 @@ const Index = () => {
               left: '50%',
               minWidth: '100%',
               minHeight: '100%',
-              transform: 'translate(calc(-50% + 28px), calc(-50% + 37px)) scale(2.1)',
+              transform: 'translate(calc(-50% + 10px), calc(-50% + 20px)) scale(2.3)',
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
