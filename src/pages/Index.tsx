@@ -264,7 +264,7 @@ const Index = () => {
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
               >
-                <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="max-w-[260px] sm:max-w-[280px] w-full object-contain md:hidden" />
+                <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="max-w-[300px] sm:max-w-[340px] w-full object-contain md:hidden" />
                 <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-48 sm:h-52 md:h-56 w-auto object-contain drop-shadow-md hidden md:block" />
               </motion.div>
             </div>
