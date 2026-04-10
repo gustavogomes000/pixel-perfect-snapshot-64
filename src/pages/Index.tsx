@@ -65,19 +65,6 @@ const Index = () => {
   const [lightbox, setLightbox] = useState<HomeGalleryItem | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
-  // DEV: controles da bandeira com persistência
-  const savedFlag = JSON.parse(localStorage.getItem('flagPos') || '{"x":0,"y":0,"z":180,"ox":38,"oy":52}');
-  const [flagX, setFlagX] = useState(savedFlag.x);
-  const [flagY, setFlagY] = useState(savedFlag.y);
-  const [flagZ, setFlagZ] = useState(savedFlag.z);
-  const [flagOX, setFlagOX] = useState(savedFlag.ox);
-  const [flagOY, setFlagOY] = useState(savedFlag.oy);
-  const [flagSaved, setFlagSaved] = useState(false);
-  const saveFlag = () => {
-    localStorage.setItem('flagPos', JSON.stringify({ x: flagX, y: flagY, z: flagZ, ox: flagOX, oy: flagOY }));
-    setFlagSaved(true);
-    setTimeout(() => setFlagSaved(false), 2000);
-  };
   const videoRef = useRef<HTMLVideoElement>(null);
   const { events: proximosEventos, loading: eventosLoading, error: eventosError } = useGoogleCalendar({ filter: "proximos", limit: 3 });
   const eventos = Array.isArray(proximosEventos) ? proximosEventos : [];
@@ -142,28 +129,6 @@ const Index = () => {
   return (
     <Layout>
       <section className="relative overflow-hidden">
-        {/* DEV: Controles de posição da bandeira */}
-        <div className="fixed top-2 left-2 z-[9999] bg-black/90 text-white p-3 rounded-lg text-xs space-y-2 w-72">
-          <p className="font-bold text-sm">🎯 Ajuste da Bandeira</p>
-          <div>
-            <label>Zoom (scale): {(flagZ / 100).toFixed(1)}x</label>
-            <input type="range" min="100" max="350" value={flagZ} onChange={e => setFlagZ(Number(e.target.value))} className="w-full" />
-          </div>
-          <div>
-            <label>Origem X: {flagOX}%</label>
-            <input type="range" min="0" max="100" value={flagOX} onChange={e => setFlagOX(Number(e.target.value))} className="w-full" />
-          </div>
-          <div>
-            <label>Origem Y: {flagOY}%</label>
-            <input type="range" min="0" max="100" value={flagOY} onChange={e => setFlagOY(Number(e.target.value))} className="w-full" />
-          </div>
-          <p className="text-yellow-300 font-mono text-[10px] break-all select-all">
-            scale-[{(flagZ / 100).toFixed(1)}] origin-[{flagOX}%_{flagOY}%]
-          </p>
-          <button onClick={saveFlag} className={`w-full py-1.5 rounded font-bold text-sm ${flagSaved ? 'bg-green-500' : 'bg-blue-600 hover:bg-blue-500'}`}>
-            {flagSaved ? '✅ Salvo!' : '💾 Salvar Posição'}
-          </button>
-        </div>
         <div className="absolute inset-0 bg-primary overflow-hidden">
           <video
             src={heroBgVideo.url}
@@ -173,8 +138,8 @@ const Index = () => {
             playsInline
             className="absolute inset-0 w-full h-full object-cover"
             style={{
-              transform: `scale(${flagZ / 100})`,
-              transformOrigin: `${flagOX}% ${flagOY}%`,
+              transform: 'scale(1.8)',
+              transformOrigin: '38% 52%',
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
