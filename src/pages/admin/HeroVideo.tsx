@@ -107,14 +107,12 @@ const HeroVideoAdmin = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Try update first, then upsert
-      const { error } = await supabase
-        .from("configuracoes" as any)
-        .upsert(
-          { chave: CONFIG_KEY, valor: JSON.stringify(positions), atualizado_em: new Date().toISOString() } as any,
-          { onConflict: "chave" }
-        );
-      if (error) throw error;
+      const res = await supabase.functions.invoke("gallery-admin", {
+        body: { action: "upsert-config", chave: CONFIG_KEY, valor: JSON.stringify(positions) },
+      });
+      if (res.error) throw res.error;
+      const result = res.data;
+      if (!result?.success) throw new Error(result?.error || "Erro desconhecido");
       toast.success("Posições salvas com sucesso!");
     } catch (err: any) {
       toast.error("Erro ao salvar: " + (err?.message || "desconhecido"));

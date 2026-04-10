@@ -148,6 +148,16 @@ Deno.serve(async (req) => {
         return json({ success: true });
       }
 
+      case "upsert-config": {
+        const { chave, valor } = body;
+        const { error } = await ext.from("configuracoes").upsert(
+          { chave, valor, atualizado_em: new Date().toISOString() },
+          { onConflict: "chave" }
+        );
+        if (error) throw error;
+        return json({ success: true });
+      }
+
       // ── Test data ──
       case "delete-test-photos": {
         const { urls } = body;
