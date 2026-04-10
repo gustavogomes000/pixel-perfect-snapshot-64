@@ -134,51 +134,42 @@ const Index = () => {
     <Layout>
       <section className="relative overflow-hidden">
         {/* DEV: Controles temporários para posicionar a bandeira */}
-        {(() => {
-          const [posX, setPosX] = useState(30);
-          const [posY, setPosY] = useState(60);
-          const [zoom, setZoom] = useState(110);
-          return (
-            <>
-              <div className="fixed top-2 left-2 z-[9999] bg-black/80 text-white p-3 rounded-lg text-xs space-y-2 w-64">
-                <p className="font-bold text-sm">🎯 Ajuste da Bandeira</p>
-                <div>
-                  <label>Horizontal (X): {posX}%</label>
-                  <input type="range" min="0" max="100" value={posX} onChange={e => setPosX(Number(e.target.value))} className="w-full" />
-                </div>
-                <div>
-                  <label>Vertical (Y): {posY}%</label>
-                  <input type="range" min="0" max="100" value={posY} onChange={e => setPosY(Number(e.target.value))} className="w-full" />
-                </div>
-                <div>
-                  <label>Zoom: {zoom}%</label>
-                  <input type="range" min="100" max="200" value={zoom} onChange={e => setZoom(Number(e.target.value))} className="w-full" />
-                </div>
-                <p className="text-yellow-300 font-mono text-[10px] break-all select-all">
-                  object-[{posX}%_{posY}%] w-[{zoom}%] h-[{zoom}%]
-                </p>
-              </div>
-              <div className="absolute inset-0 bg-primary">
-                <video
-                  src={heroBgVideo.url}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  style={{
-                    position: 'absolute',
-                    inset: `-${(zoom - 100) / 2}%`,
-                    width: `${zoom}%`,
-                    height: `${zoom}%`,
-                    objectFit: 'cover',
-                    objectPosition: `${posX}% ${posY}%`,
-                  }}
-                />
-                <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
-              </div>
-            </>
-          );
-        })()}
+        <div className="fixed top-2 left-2 z-[9999] bg-black/80 text-white p-3 rounded-lg text-xs space-y-2 w-64">
+          <p className="font-bold text-sm">🎯 Ajuste da Bandeira</p>
+          <div>
+            <label>Horizontal (X): {flagPosX}%</label>
+            <input type="range" min="0" max="100" value={flagPosX} onChange={e => setFlagPosX(Number(e.target.value))} className="w-full" />
+          </div>
+          <div>
+            <label>Vertical (Y): {flagPosY}%</label>
+            <input type="range" min="0" max="100" value={flagPosY} onChange={e => setFlagPosY(Number(e.target.value))} className="w-full" />
+          </div>
+          <div>
+            <label>Zoom: {flagZoom}%</label>
+            <input type="range" min="100" max="250" value={flagZoom} onChange={e => setFlagZoom(Number(e.target.value))} className="w-full" />
+          </div>
+          <p className="text-yellow-300 font-mono text-[10px] break-all select-all">
+            object-[{flagPosX}%_{flagPosY}%] w-[{flagZoom}%] h-[{flagZoom}%]
+          </p>
+        </div>
+        <div className="absolute inset-0 bg-primary">
+          <video
+            src={heroBgVideo.url}
+            autoPlay
+            loop
+            muted
+            playsInline
+            style={{
+              position: 'absolute',
+              inset: `-${(flagZoom - 100) / 2}%`,
+              width: `${flagZoom}%`,
+              height: `${flagZoom}%`,
+              objectFit: 'cover',
+              objectPosition: `${flagPosX}% ${flagPosY}%`,
+            }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
+        </div>
 
         <div className="container relative z-10 py-10 sm:py-14 md:py-24">
           <div className="grid md:grid-cols-2 gap-8 md:gap-10 items-center">
