@@ -65,10 +65,10 @@ const Index = () => {
   const [lightbox, setLightbox] = useState<HomeGalleryItem | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
-  // DEV: controles temporários da bandeira
-  const [flagPosX, setFlagPosX] = useState(30);
-  const [flagPosY, setFlagPosY] = useState(60);
-  const [flagZoom, setFlagZoom] = useState(110);
+  // DEV: controles temporários da bandeira (translate livre + zoom)
+  const [flagPosX, setFlagPosX] = useState(0);
+  const [flagPosY, setFlagPosY] = useState(0);
+  const [flagZoom, setFlagZoom] = useState(100);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { events: proximosEventos, loading: eventosLoading, error: eventosError } = useGoogleCalendar({ filter: "proximos", limit: 3 });
   const eventos = Array.isArray(proximosEventos) ? proximosEventos : [];
@@ -137,22 +137,22 @@ const Index = () => {
         <div className="fixed top-2 left-2 z-[9999] bg-black/80 text-white p-3 rounded-lg text-xs space-y-2 w-64">
           <p className="font-bold text-sm">🎯 Ajuste da Bandeira</p>
           <div>
-            <label>Horizontal (X): {flagPosX}%</label>
-            <input type="range" min="0" max="100" value={flagPosX} onChange={e => setFlagPosX(Number(e.target.value))} className="w-full" />
+            <label>Mover X: {flagPosX}px</label>
+            <input type="range" min="-500" max="500" value={flagPosX} onChange={e => setFlagPosX(Number(e.target.value))} className="w-full" />
           </div>
           <div>
-            <label>Vertical (Y): {flagPosY}%</label>
-            <input type="range" min="0" max="100" value={flagPosY} onChange={e => setFlagPosY(Number(e.target.value))} className="w-full" />
+            <label>Mover Y: {flagPosY}px</label>
+            <input type="range" min="-500" max="500" value={flagPosY} onChange={e => setFlagPosY(Number(e.target.value))} className="w-full" />
           </div>
           <div>
             <label>Zoom: {flagZoom}%</label>
-            <input type="range" min="100" max="250" value={flagZoom} onChange={e => setFlagZoom(Number(e.target.value))} className="w-full" />
+            <input type="range" min="50" max="300" value={flagZoom} onChange={e => setFlagZoom(Number(e.target.value))} className="w-full" />
           </div>
           <p className="text-yellow-300 font-mono text-[10px] break-all select-all">
-            object-[{flagPosX}%_{flagPosY}%] w-[{flagZoom}%] h-[{flagZoom}%]
+            X:{flagPosX}px Y:{flagPosY}px Zoom:{flagZoom}%
           </p>
         </div>
-        <div className="absolute inset-0 bg-primary">
+        <div className="absolute inset-0 bg-primary overflow-hidden">
           <video
             src={heroBgVideo.url}
             autoPlay
@@ -161,11 +161,11 @@ const Index = () => {
             playsInline
             style={{
               position: 'absolute',
-              inset: `-${(flagZoom - 100) / 2}%`,
-              width: `${flagZoom}%`,
-              height: `${flagZoom}%`,
-              objectFit: 'cover',
-              objectPosition: `${flagPosX}% ${flagPosY}%`,
+              top: '50%',
+              left: '50%',
+              minWidth: '100%',
+              minHeight: '100%',
+              transform: `translate(calc(-50% + ${flagPosX}px), calc(-50% + ${flagPosY}px)) scale(${flagZoom / 100})`,
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
