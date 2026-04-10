@@ -265,7 +265,7 @@ const Index = () => {
                 transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
               >
                 <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="max-w-[300px] sm:max-w-[340px] w-full object-contain md:hidden" />
-                <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="max-w-xs sm:max-w-sm md:max-w-md w-full object-contain hidden md:block" />
+                <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="max-w-sm sm:max-w-md md:max-w-lg w-full object-contain hidden md:block" />
               </motion.div>
             </div>
           </div>
