@@ -77,8 +77,13 @@ const Index = () => {
 
   const currentBreakpoint: "mobile" | "tablet" | "desktop" =
     windowWidth < MOBILE_BP ? "mobile" : windowWidth < TABLET_BP ? "tablet" : "desktop";
-  const heroVideoSrc = currentBreakpoint === "mobile" ? heroBgVideoMobile.url : heroBgVideo.url;
-  const heroVideoStyle = getVideoStyle(heroPositions[currentBreakpoint]);
+  const usesResponsiveHeroVideo = currentBreakpoint !== "desktop";
+  const heroVideoSrc = usesResponsiveHeroVideo ? heroBgVideoMobile.url : heroBgVideo.url;
+  const heroVideoStyle = getVideoStyle(
+    usesResponsiveHeroVideo
+      ? { ...heroPositions[currentBreakpoint], scale: 100 }
+      : heroPositions[currentBreakpoint]
+  );
   const [galeriaItems, setGaleriaItems] = useState<HomeGalleryItem[]>([]);
   const [galeriaAtiva, setGaleriaAtiva] = useState(false);
   const [galeriaFiltro, setGaleriaFiltro] = useState<"todos" | "foto" | "video" | "eventos">("todos");
@@ -156,8 +161,11 @@ const Index = () => {
             loop
             muted
             playsInline
-            className="absolute inset-0 h-full w-full object-cover"
-            style={heroVideoStyle}
+            className="absolute inset-0 h-full w-full"
+            style={{
+              ...heroVideoStyle,
+              objectFit: usesResponsiveHeroVideo ? "contain" : "cover",
+            }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
         </div>

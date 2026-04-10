@@ -17,9 +17,15 @@ interface AllPositions {
 
 const DEFAULTS: AllPositions = {
   mobile: { x: 50, y: 50, scale: 100 },
-  tablet: { x: 45, y: 22, scale: 108 },
+  tablet: { x: 50, y: 50, scale: 100 },
   desktop: { x: 37, y: 28, scale: 133 },
 };
+
+const normalizePositions = (value?: Partial<AllPositions> | null): AllPositions => ({
+  mobile: { ...DEFAULTS.mobile, ...(value?.mobile ?? {}), scale: 100 },
+  tablet: { ...DEFAULTS.tablet, ...(value?.tablet ?? {}), scale: 100 },
+  desktop: { ...DEFAULTS.desktop, ...(value?.desktop ?? {}) },
+});
 
 export function useHeroVideoPosition() {
   const [positions, setPositions] = useState<AllPositions>(DEFAULTS);
@@ -29,12 +35,12 @@ export function useHeroVideoPosition() {
       .from("configuracoes" as any)
       .select("valor")
       .eq("chave", CONFIG_KEY)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (data && (data as any).valor) {
           try {
             const parsed = JSON.parse((data as any).valor);
-            setPositions({ ...DEFAULTS, ...parsed });
+            setPositions(normalizePositions(parsed));
           } catch {}
         }
       });
