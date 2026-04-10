@@ -6,6 +6,7 @@ import { useGoogleCalendar } from "@/hooks/useGoogleCalendar";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseDb";
 import { getGaleriaAtiva } from "@/hooks/useGaleriaConfig";
+import { useIsMobile } from "@/hooks/use-mobile";
 import Layout from "@/components/Layout";
 import WaveDivider from "@/components/WaveDivider";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -66,6 +67,7 @@ interface HomeGalleryItem {
 }
 
 const Index = () => {
+  const isMobile = useIsMobile();
   const [galeriaItems, setGaleriaItems] = useState<HomeGalleryItem[]>([]);
   const [galeriaAtiva, setGaleriaAtiva] = useState(false);
   const [galeriaFiltro, setGaleriaFiltro] = useState<"todos" | "foto" | "video" | "eventos">("todos");
@@ -137,14 +139,23 @@ const Index = () => {
     <Layout>
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-primary overflow-hidden">
-          <video
-            src={heroBgVideo.url}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className={HERO_VIDEO_POSITION_CLASSES}
-          />
+          {isMobile ? (
+            <img
+              src={heroBg}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover object-[50%_24%]"
+            />
+          ) : (
+            <video
+              src={heroBgVideo.url}
+              autoPlay
+              loop
+              muted
+              playsInline
+              className={HERO_VIDEO_POSITION_CLASSES}
+            />
+          )}
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
         </div>
 
