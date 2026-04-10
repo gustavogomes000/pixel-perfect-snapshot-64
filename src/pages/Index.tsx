@@ -10,6 +10,7 @@ import Layout from "@/components/Layout";
 import WaveDivider from "@/components/WaveDivider";
 import ScrollReveal from "@/components/ScrollReveal";
 import logoSarelli from "@/assets/logo-sarelli.png";
+import logoNovo from "@/assets/logo-novo-partido.png";
 
 const PHOTO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
@@ -192,7 +193,7 @@ const Index = () => {
             </div>
 
             {/* Hero image – appears above text on mobile, beside on desktop */}
-            <div className="flex justify-center order-first md:order-none mb-6 md:mb-0">
+            <div className="flex flex-col items-center justify-center order-first md:order-none mb-6 md:mb-0 gap-5">
               <div className="relative">
                 {/* Skeleton placeholder – shows instantly while image loads */}
                 <div className="h-64 w-64 sm:h-80 sm:w-80 md:h-[28rem] md:w-[28rem] rounded-full border-4 border-primary overflow-hidden shadow-2xl ring-pulse relative">
@@ -212,6 +213,9 @@ const Index = () => {
                   />
                 </div>
               </div>
+              <ScrollReveal delay={0.15}>
+                <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-12 sm:h-14 md:h-16 w-auto object-contain drop-shadow-md" />
+              </ScrollReveal>
             </div>
           </div>
         </div>
