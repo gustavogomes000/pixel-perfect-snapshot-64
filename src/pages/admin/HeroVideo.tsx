@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { Monitor, Smartphone, Tablet, Save, RotateCcw, Move, ZoomIn, ZoomOut } from "lucide-react";
-import { supabase } from "@/lib/supabaseDb";
+import { supabase as supabaseExt } from "@/lib/supabaseDb";
+import { supabase } from "@/integrations/supabase/client";
 import { useAdmin } from "@/hooks/useAdmin";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
@@ -50,7 +51,7 @@ const HeroVideoAdmin = () => {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await supabase
+      const { data } = await supabaseExt
         .from("configuracoes" as any)
         .select("valor")
         .eq("chave", CONFIG_KEY)
@@ -107,14 +108,12 @@ const HeroVideoAdmin = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      // Try update first, then upsert
-      const { error } = await supabase
-        .from("configuracoes" as any)
-        .upsert(
-          { chave: CONFIG_KEY, valor: JSON.stringify(positions), atualizado_em: new Date().toISOString() } as any,
-          { onConflict: "chave" }
-        );
-      if (error) throw error;
+      const res = await supabase.functions.invoke("gallery-admin", {
+        body: { action: "upsert-config", chave: CONFIG_KEY, valor: JSON.stringify(positions) },
+      });
+      if (res.error) throw res.error;
+      const result = res.data;
+      if (!result?.success) throw new Error(result?.error || "Erro desconhecido");
       toast.success("Posições salvas com sucesso!");
     } catch (err: any) {
       toast.error("Erro ao salvar: " + (err?.message || "desconhecido"));
