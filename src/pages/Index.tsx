@@ -16,6 +16,13 @@ import heroBgVideo from "@/assets/bandeira-goias-hero.mp4.asset.json";
 
 const PHOTO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
+const HERO_VIDEO_POSITION_CLASSES = [
+  "absolute inset-0 h-full w-full object-cover",
+  "origin-[50%_18%] scale-100",
+  "sm:origin-[45%_22%] sm:scale-[1.08]",
+  "lg:origin-[37%_28%] lg:scale-[1.33]",
+].join(" ");
+
 const bandeiras = [
   {
     icon: Heart,
@@ -136,11 +143,7 @@ const Index = () => {
             loop
             muted
             playsInline
-            className="absolute inset-0 w-full h-full object-cover"
-            style={{
-              transform: 'scale(1.33)',
-              transformOrigin: '37% 28%',
-            }}
+            className={HERO_VIDEO_POSITION_CLASSES}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
         </div>
