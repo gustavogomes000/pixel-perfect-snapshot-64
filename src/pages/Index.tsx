@@ -197,7 +197,7 @@ const Index = () => {
             </div>
 
             {/* Hero image – appears above text on mobile, beside on desktop */}
-            <div className="flex flex-col items-center justify-center order-first md:order-none mb-2 md:mb-0 gap-3 md:gap-5">
+            <div className="flex flex-col items-center justify-center order-first md:order-none mb-0 md:mb-0 gap-1 md:gap-5">
               <div className="relative">
                 {/* Skeleton placeholder – shows instantly while image loads */}
                 <div className="h-64 w-64 sm:h-80 sm:w-80 md:h-[28rem] md:w-[28rem] rounded-full border-4 border-primary overflow-hidden shadow-2xl ring-pulse relative">
