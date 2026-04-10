@@ -65,10 +65,6 @@ const Index = () => {
   const [lightbox, setLightbox] = useState<HomeGalleryItem | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
-  // DEV: controles temporários da bandeira (translate livre + zoom)
-  const [flagPosX, setFlagPosX] = useState(0);
-  const [flagPosY, setFlagPosY] = useState(0);
-  const [flagZoom, setFlagZoom] = useState(100);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { events: proximosEventos, loading: eventosLoading, error: eventosError } = useGoogleCalendar({ filter: "proximos", limit: 3 });
   const eventos = Array.isArray(proximosEventos) ? proximosEventos : [];
