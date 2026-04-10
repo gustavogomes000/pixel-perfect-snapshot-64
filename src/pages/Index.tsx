@@ -168,7 +168,7 @@ const Index = () => {
                 transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
               >
                 <div className="mt-4 flex justify-center md:hidden">
-                  <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-40 sm:h-44 w-auto object-contain drop-shadow-md" /> />
+                  <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-40 sm:h-44 w-auto object-contain drop-shadow-md" />
                 </div>
                 <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="mt-5 max-w-xs sm:max-w-sm md:max-w-md w-full hidden md:block" />
               </motion.div>
