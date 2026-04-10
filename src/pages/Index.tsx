@@ -128,10 +128,10 @@ const Index = () => {
     <Layout>
       <section className="gradient-hero relative overflow-hidden">
         <div className="container relative z-10 py-10 sm:py-14 md:py-24">
-          <div className="grid md:grid-cols-2 gap-3 md:gap-10 items-center">
+          <div className="grid md:grid-cols-2 gap-1 md:gap-10 items-center">
             <div className="text-center md:text-left">
               <ScrollReveal>
-                <span className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground shadow-sm">
+                <span className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground shadow-sm mt-[-4px] md:mt-0">
                   <span className="h-2 w-2 rounded-full bg-primary-foreground animate-pulse" />
                   Pré-candidata 2026
                 </span>
@@ -139,7 +139,7 @@ const Index = () => {
 
               {/* Mobile: show NOVO logo here (centered) | Desktop: show Sarelli logo */}
               <ScrollReveal delay={0.1}>
-                <div className="mt-3 flex justify-center md:hidden">
+                <div className="mt-4 flex justify-center md:hidden">
                   <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-10 sm:h-12 w-auto object-contain drop-shadow-md" />
                 </div>
                 <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="mt-5 max-w-xs sm:max-w-sm md:max-w-md w-full hidden md:block" />
@@ -197,7 +197,7 @@ const Index = () => {
             </div>
 
             {/* Hero image – appears above text on mobile, beside on desktop */}
-            <div className="flex flex-col items-center justify-center order-first md:order-none mb-0 md:mb-0 gap-1 md:gap-5">
+            <div className="flex flex-col items-center justify-center order-first md:order-none mb-0 md:mb-0 gap-2 md:gap-5">
               <div className="relative">
                 {/* Skeleton placeholder – shows instantly while image loads */}
                 <div className="h-64 w-64 sm:h-80 sm:w-80 md:h-[28rem] md:w-[28rem] rounded-full border-4 border-primary overflow-hidden shadow-2xl ring-pulse relative">
