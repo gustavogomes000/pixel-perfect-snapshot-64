@@ -129,17 +129,53 @@ const Index = () => {
   return (
     <Layout>
       <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-primary">
-          <video
-            src={heroBgVideo.url}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute -top-[5%] -left-[5%] -right-[5%] -bottom-[5%] w-[110%] h-[110%] object-cover object-[30%_60%]"
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
-        </div>
+        {/* DEV: Controles temporários para posicionar a bandeira */}
+        {(() => {
+          const [posX, setPosX] = useState(30);
+          const [posY, setPosY] = useState(60);
+          const [zoom, setZoom] = useState(110);
+          return (
+            <>
+              <div className="fixed top-2 left-2 z-[9999] bg-black/80 text-white p-3 rounded-lg text-xs space-y-2 w-64">
+                <p className="font-bold text-sm">🎯 Ajuste da Bandeira</p>
+                <div>
+                  <label>Horizontal (X): {posX}%</label>
+                  <input type="range" min="0" max="100" value={posX} onChange={e => setPosX(Number(e.target.value))} className="w-full" />
+                </div>
+                <div>
+                  <label>Vertical (Y): {posY}%</label>
+                  <input type="range" min="0" max="100" value={posY} onChange={e => setPosY(Number(e.target.value))} className="w-full" />
+                </div>
+                <div>
+                  <label>Zoom: {zoom}%</label>
+                  <input type="range" min="100" max="200" value={zoom} onChange={e => setZoom(Number(e.target.value))} className="w-full" />
+                </div>
+                <p className="text-yellow-300 font-mono text-[10px] break-all select-all">
+                  object-[{posX}%_{posY}%] w-[{zoom}%] h-[{zoom}%]
+                </p>
+              </div>
+              <div className="absolute inset-0 bg-primary">
+                <video
+                  src={heroBgVideo.url}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  style={{
+                    position: 'absolute',
+                    inset: `-${(zoom - 100) / 2}%`,
+                    width: `${zoom}%`,
+                    height: `${zoom}%`,
+                    objectFit: 'cover',
+                    objectPosition: `${posX}% ${posY}%`,
+                  }}
+                />
+                <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
+              </div>
+            </>
+          );
+        })()}
+
         <div className="container relative z-10 py-10 sm:py-14 md:py-24">
           <div className="grid md:grid-cols-2 gap-8 md:gap-10 items-center">
             <div className="text-center md:text-left">
