@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { motion } from "framer-motion";
 import { decodeFocalPoint, decodeThumbnail } from "@/components/admin/FocalPointPicker";
 import { Link } from "react-router-dom";
 import { Calendar, Clock, MapPin, ExternalLink, Shield, Heart, Users, Scale, MessageCircle, Facebook, Instagram, User, Mail, MapPinIcon, Loader2, Play, X, Share2 } from "lucide-react";
@@ -127,79 +128,119 @@ const Index = () => {
   return (
     <Layout>
       <section className="gradient-hero relative overflow-hidden">
+        {/* Animated background particles */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          {[...Array(5)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute rounded-full bg-primary-foreground/10"
+              style={{
+                width: 60 + i * 40,
+                height: 60 + i * 40,
+                left: `${10 + i * 20}%`,
+                top: `${20 + (i % 3) * 25}%`,
+              }}
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{ opacity: [0, 0.3, 0.1], scale: [0, 1.2, 1], y: [0, -20, 0] }}
+              transition={{ duration: 4, delay: 0.8 + i * 0.3, repeat: Infinity, repeatType: "reverse", ease: "easeInOut" }}
+            />
+          ))}
+        </div>
+
         <div className="container relative z-10 py-10 sm:py-14 md:py-24">
           <div className="grid md:grid-cols-2 gap-1 md:gap-10 items-center">
             <div className="text-center md:text-left">
-              <ScrollReveal>
+              <motion.div
+                initial={{ opacity: 0, y: -20, scale: 0.8 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+              >
                 <span className="inline-flex items-center gap-2 rounded-full border border-primary bg-primary px-4 py-1.5 text-sm font-medium text-primary-foreground shadow-sm mt-[-4px] md:mt-0">
                   <span className="h-2 w-2 rounded-full bg-primary-foreground animate-pulse" />
                   Pré-candidata 2026
                 </span>
-              </ScrollReveal>
+              </motion.div>
 
               {/* Mobile: show NOVO logo here (centered) | Desktop: show Sarelli logo */}
-              <ScrollReveal delay={0.1}>
+              <motion.div
+                initial={{ opacity: 0, y: 30, filter: "blur(10px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+              >
                 <div className="mt-4 flex justify-center md:hidden">
                   <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-10 sm:h-12 w-auto object-contain drop-shadow-md" />
                 </div>
                 <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="mt-5 max-w-xs sm:max-w-sm md:max-w-md w-full hidden md:block" />
-              </ScrollReveal>
+              </motion.div>
 
-              <ScrollReveal delay={0.2}>
-                <p className="mt-4 text-primary-foreground/80 leading-relaxed max-w-md mx-auto md:mx-0">
-                  Pré-candidata a Deputada Estadual por Goiás pelo Partido NOVO, com compromisso real com a defesa da mulher e da família.
-                </p>
-              </ScrollReveal>
+              <motion.p
+                className="mt-4 text-primary-foreground/80 leading-relaxed max-w-md mx-auto md:mx-0"
+                initial={{ opacity: 0, x: -30 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.7, delay: 0.4, ease: "easeOut" }}
+              >
+                Pré-candidata a Deputada Estadual por Goiás pelo Partido NOVO, com compromisso real com a defesa da mulher e da família.
+              </motion.p>
 
-              <ScrollReveal delay={0.25}>
-                <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-3">
-                  <Link
-                    to="/agenda"
-                    className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:scale-105"
-                  >
-                    <Calendar className="h-4 w-4" />
-                    Ver Agenda
-                  </Link>
-                  <a
-                    href="https://wa.me/5562993237397?text=Ol%C3%A1%20Dra.%20Fernanda%20Sarelli"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 rounded-full border-2 border-primary-foreground/40 px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/10"
-                  >
-                    <Users className="h-4 w-4" />
-                    Faça Parte
-                  </a>
+              <motion.div
+                className="mt-6 flex flex-wrap justify-center md:justify-start gap-3"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
+              >
+                <Link
+                  to="/agenda"
+                  className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:scale-105"
+                >
+                  <Calendar className="h-4 w-4" />
+                  Ver Agenda
+                </Link>
+                <a
+                  href="https://wa.me/5562993237397?text=Ol%C3%A1%20Dra.%20Fernanda%20Sarelli"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-full border-2 border-primary-foreground/40 px-6 py-3 text-sm font-semibold text-primary-foreground transition-colors hover:bg-primary-foreground/10"
+                >
+                  <Users className="h-4 w-4" />
+                  Faça Parte
+                </a>
+              </motion.div>
+
+              <motion.div
+                className="mt-8 flex items-center gap-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.8, ease: "easeOut" }}
+              >
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-primary-foreground">GO</p>
+                  <p className="text-xs text-primary-foreground/70">Estado</p>
                 </div>
-              </ScrollReveal>
-
-              <ScrollReveal delay={0.3}>
-                <div className="mt-8 flex items-center gap-6">
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-primary-foreground">GO</p>
-                    <p className="text-xs text-primary-foreground/70">Estado</p>
-                  </div>
-                  <div className="h-10 w-px bg-primary-foreground/20" />
-                  <div className="text-center">
-                    <p className="text-2xl font-bold text-primary-foreground">2026</p>
-                    <p className="text-xs text-primary-foreground/70">Eleições</p>
-                  </div>
-                  <Link
-                    to="/sobre"
-                    className="flex flex-col items-center gap-1 text-primary-foreground/80 hover:text-primary-foreground transition-colors"
-                  >
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full border border-primary-foreground/30">
-                      <User className="h-5 w-5" />
-                    </div>
-                    <p className="text-xs">Sobre Mim</p>
-                  </Link>
+                <div className="h-10 w-px bg-primary-foreground/20" />
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-primary-foreground">2026</p>
+                  <p className="text-xs text-primary-foreground/70">Eleições</p>
                 </div>
-              </ScrollReveal>
+                <Link
+                  to="/sobre"
+                  className="flex flex-col items-center gap-1 text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full border border-primary-foreground/30">
+                    <User className="h-5 w-5" />
+                  </div>
+                  <p className="text-xs">Sobre Mim</p>
+                </Link>
+              </motion.div>
             </div>
 
-            {/* Hero image – appears above text on mobile, beside on desktop */}
+            {/* Hero image */}
             <div className="flex flex-col items-center justify-center order-first md:order-none mb-0 md:mb-0 gap-2 md:gap-5">
-              <div className="relative">
-                {/* Skeleton placeholder – shows instantly while image loads */}
+              <motion.div
+                className="relative"
+                initial={{ opacity: 0, scale: 0.5, rotate: -5 }}
+                animate={{ opacity: 1, scale: 1, rotate: 0 }}
+                transition={{ duration: 0.9, delay: 0.1, type: "spring", stiffness: 100, damping: 15 }}
+              >
                 <div className="h-64 w-64 sm:h-80 sm:w-80 md:h-[28rem] md:w-[28rem] rounded-full border-4 border-primary overflow-hidden shadow-2xl ring-pulse relative">
                   {!heroImgLoaded && (
                     <div className="absolute inset-0 bg-gradient-to-br from-pink-200 via-pink-300 to-pink-400 animate-pulse" />
@@ -216,12 +257,16 @@ const Index = () => {
                     onLoad={() => setHeroImgLoaded(true)}
                   />
                 </div>
-              </div>
+              </motion.div>
               {/* Mobile: show Sarelli logo here | Desktop: show NOVO logo */}
-              <ScrollReveal delay={0.15}>
+              <motion.div
+                initial={{ opacity: 0, y: 20, filter: "blur(8px)" }}
+                animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                transition={{ duration: 0.7, delay: 0.5, ease: "easeOut" }}
+              >
                 <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="max-w-[260px] sm:max-w-[280px] w-full object-contain md:hidden" />
                 <img src={logoNovo} alt="Partido NOVO - A gente respeita Goiás" className="h-12 sm:h-14 md:h-16 w-auto object-contain drop-shadow-md hidden md:block" />
-              </ScrollReveal>
+              </motion.div>
             </div>
           </div>
         </div>
