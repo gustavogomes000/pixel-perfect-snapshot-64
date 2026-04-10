@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseDb";
 import { getGaleriaAtiva } from "@/hooks/useGaleriaConfig";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { useHeroVideoPosition, getVideoStyle } from "@/hooks/useHeroVideoPosition";
 import Layout from "@/components/Layout";
 import WaveDivider from "@/components/WaveDivider";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -18,12 +19,8 @@ import heroBgVideoMobile from "@/assets/bandeira-goias-hero-mobile-v3.mp4.asset.
 
 const PHOTO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
-const HERO_VIDEO_POSITION_CLASSES = [
-  "absolute inset-0 h-full w-full object-cover",
-  "origin-[50%_18%] scale-100",
-  "sm:origin-[45%_22%] sm:scale-[1.08]",
-  "lg:origin-[37%_28%] lg:scale-[1.33]",
-].join(" ");
+const MOBILE_BP = 768;
+const TABLET_BP = 1024;
 
 const bandeiras = [
   {
@@ -69,6 +66,19 @@ interface HomeGalleryItem {
 
 const Index = () => {
   const isMobile = useIsMobile();
+  const heroPositions = useHeroVideoPosition();
+  const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1280);
+
+  useEffect(() => {
+    const onResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const currentBreakpoint: "mobile" | "tablet" | "desktop" =
+    windowWidth < MOBILE_BP ? "mobile" : windowWidth < TABLET_BP ? "tablet" : "desktop";
+  const heroVideoSrc = currentBreakpoint === "mobile" ? heroBgVideoMobile.url : heroBgVideo.url;
+  const heroVideoStyle = getVideoStyle(heroPositions[currentBreakpoint]);
   const [galeriaItems, setGaleriaItems] = useState<HomeGalleryItem[]>([]);
   const [galeriaAtiva, setGaleriaAtiva] = useState(false);
   const [galeriaFiltro, setGaleriaFiltro] = useState<"todos" | "foto" | "video" | "eventos">("todos");
@@ -140,25 +150,15 @@ const Index = () => {
     <Layout>
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-primary overflow-hidden">
-          {isMobile ? (
-            <video
-              src={heroBgVideoMobile.url}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          ) : (
-            <video
-              src={heroBgVideo.url}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className={HERO_VIDEO_POSITION_CLASSES}
-            />
-          )}
+          <video
+            src={heroVideoSrc}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 h-full w-full object-cover"
+            style={heroVideoStyle}
+          />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
         </div>
 

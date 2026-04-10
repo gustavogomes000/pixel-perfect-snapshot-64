@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
-import { Image, FileText, Settings, LogOut, Menu, X } from "lucide-react";
+import { Image, FileText, Settings, LogOut, Menu, X, Video } from "lucide-react";
 import { useAdmin, painelLogout } from "@/hooks/useAdmin";
 
 const navItems = [
   { to: "/admin/galeria", icon: Image, label: "Galeria" },
+  { to: "/admin/hero-video", icon: Video, label: "Hero" },
   { to: "/admin/formularios", icon: FileText, label: "Formulários" },
   { to: "/admin/configuracoes", icon: Settings, label: "Config" },
 ];
