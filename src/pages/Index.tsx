@@ -137,7 +137,7 @@ const Index = () => {
             muted
             playsInline
             className="absolute inset-0 w-full h-full object-cover"
-            style={{ objectPosition: 'center 40%' }}
+            style={{ objectPosition: 'center 20%' }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
         </div>
