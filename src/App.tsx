@@ -17,7 +17,6 @@ const AdminLoginPage = lazy(() => import("./pages/admin/Login"));
 const Gallery = lazy(() => import("./pages/admin/Gallery"));
 const Forms = lazy(() => import("./pages/admin/Forms"));
 const SettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
-const HeroVideoAdmin = lazy(() => import("./pages/admin/HeroVideo"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ValidarCaptura = lazy(() => import("./pages/ValidarCaptura"));
 
@@ -50,7 +49,6 @@ const AppShell = () => (
               <Route path="/admin/galeria" element={<Gallery />} />
               <Route path="/admin/formularios" element={<Forms />} />
               <Route path="/admin/configuracoes" element={<SettingsPage />} />
-              <Route path="/admin/hero-video" element={<HeroVideoAdmin />} />
               <Route path="/validar-captura" element={<ValidarCaptura />} />
               <Route path="*" element={<NotFound />} />
             </Routes>

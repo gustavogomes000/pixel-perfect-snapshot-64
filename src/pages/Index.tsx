@@ -6,21 +6,12 @@ import { useGoogleCalendar } from "@/hooks/useGoogleCalendar";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseDb";
 import { getGaleriaAtiva } from "@/hooks/useGaleriaConfig";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { useHeroVideoPosition, getVideoStyle } from "@/hooks/useHeroVideoPosition";
 import Layout from "@/components/Layout";
 import WaveDivider from "@/components/WaveDivider";
 import ScrollReveal from "@/components/ScrollReveal";
 import logoSarelli from "@/assets/logo-sarelli.png";
-import logoNovo from "@/assets/logo-novo-partido.png";
-import heroBg from "@/assets/hero-bg-bandeira.jpg";
-import heroBgVideo from "@/assets/bandeira-goias-hero.mp4.asset.json";
-import heroBgVideoMobile from "@/assets/bandeira-goias-hero-mobile-v3.mp4.asset.json";
 
 const PHOTO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
-
-const MOBILE_BP = 768;
-const TABLET_BP = 1024;
 
 const bandeiras = [
   {
@@ -65,25 +56,6 @@ interface HomeGalleryItem {
 }
 
 const Index = () => {
-  const isMobile = useIsMobile();
-  const heroPositions = useHeroVideoPosition();
-  const [windowWidth, setWindowWidth] = useState(typeof window !== "undefined" ? window.innerWidth : 1280);
-
-  useEffect(() => {
-    const onResize = () => setWindowWidth(window.innerWidth);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  const currentBreakpoint: "mobile" | "tablet" | "desktop" =
-    windowWidth < MOBILE_BP ? "mobile" : windowWidth < TABLET_BP ? "tablet" : "desktop";
-  const usesResponsiveHeroVideo = currentBreakpoint !== "desktop";
-  const heroVideoSrc = usesResponsiveHeroVideo ? heroBgVideoMobile.url : heroBgVideo.url;
-  const heroVideoStyle = getVideoStyle(
-    usesResponsiveHeroVideo
-      ? { ...heroPositions[currentBreakpoint], scale: 100 }
-      : heroPositions[currentBreakpoint]
-  );
   const [galeriaItems, setGaleriaItems] = useState<HomeGalleryItem[]>([]);
   const [galeriaAtiva, setGaleriaAtiva] = useState(false);
   const [galeriaFiltro, setGaleriaFiltro] = useState<"todos" | "foto" | "video" | "eventos">("todos");
@@ -153,23 +125,7 @@ const Index = () => {
 
   return (
     <Layout>
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0 bg-primary overflow-hidden">
-          <video
-            src={heroVideoSrc}
-            autoPlay
-            loop
-            muted
-            playsInline
-            className="absolute inset-0 h-full w-full"
-            style={{
-              ...heroVideoStyle,
-              objectFit: usesResponsiveHeroVideo ? "contain" : "cover",
-            }}
-          />
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
-        </div>
-
+      <section className="gradient-hero relative overflow-hidden">
         <div className="container relative z-10 py-10 sm:py-14 md:py-24">
           <div className="grid md:grid-cols-2 gap-8 md:gap-10 items-center">
             <div className="text-center md:text-left">
@@ -182,7 +138,6 @@ const Index = () => {
 
               <ScrollReveal delay={0.1}>
                 <img src={logoSarelli} alt="Dra. Fernanda Sarelli - Chama a Doutora" className="mt-5 max-w-xs sm:max-w-sm md:max-w-md w-full" />
-                <img src={logoNovo} alt="Partido NOVO" className="mt-3 h-8 sm:h-10 w-auto object-contain" />
               </ScrollReveal>
 
               <ScrollReveal delay={0.2}>
