@@ -150,25 +150,15 @@ const Index = () => {
     <Layout>
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-primary overflow-hidden">
-          {isMobile ? (
-            <video
-              src={heroBgVideoMobile.url}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className="absolute inset-0 h-full w-full object-cover"
-            />
-          ) : (
-            <video
-              src={heroBgVideo.url}
-              autoPlay
-              loop
-              muted
-              playsInline
-              className={HERO_VIDEO_POSITION_CLASSES}
-            />
-          )}
+          <video
+            src={heroVideoSrc}
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="absolute inset-0 h-full w-full object-cover"
+            style={heroVideoStyle}
+          />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
         </div>
 
