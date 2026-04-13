@@ -117,8 +117,10 @@ Deno.serve(async (req) => {
       }
 
       case "update-album": {
-        const { id, nome } = body;
-        const { error } = await ext.from("albuns").update({ nome }).eq("id", id);
+        const { id, ...rest } = body;
+        // Remove action from the updates
+        const { action: _a, ...updates } = rest;
+        const { error } = await ext.from("albuns").update(updates).eq("id", id);
         if (error) throw error;
         return json({ success: true });
       }
