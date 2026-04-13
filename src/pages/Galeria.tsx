@@ -329,16 +329,30 @@ const GaleriaPublica = () => {
                   </button>
                   {selectedAlbum === album.id && (
                     <button
-                      onClick={async () => {
+                      onClick={async (e) => {
+                        e.stopPropagation();
                         const albumUrl = `${window.location.origin}/galeria?album=${album.id}`;
                         const texto = `📸 ${album.nome} — Galeria Fernanda Sarelli\n\n👉 Veja as fotos: ${albumUrl}`;
                         if (navigator.share) {
                           try {
                             await navigator.share({ title: album.nome, text: texto, url: albumUrl });
-                          } catch { /* cancelled */ }
-                        } else {
+                            return;
+                          } catch { /* cancelled or failed, fall through to clipboard */ }
+                        }
+                        try {
                           await navigator.clipboard.writeText(texto);
-                          toast.success("Link copiado!");
+                          toast.success("🔗 Link copiado!");
+                        } catch {
+                          // Fallback for older browsers / iframes
+                          const ta = document.createElement("textarea");
+                          ta.value = texto;
+                          ta.style.position = "fixed";
+                          ta.style.opacity = "0";
+                          document.body.appendChild(ta);
+                          ta.select();
+                          document.execCommand("copy");
+                          document.body.removeChild(ta);
+                          toast.success("🔗 Link copiado!");
                         }
                       }}
                       className="rounded-full h-8 w-8 flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
