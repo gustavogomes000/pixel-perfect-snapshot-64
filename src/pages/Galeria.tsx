@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Download } from "lucide-react";
+import { Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { Image as ImageIcon, Play, X, Loader2, Share2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseDb";
 import { toast } from "sonner";
@@ -23,6 +23,8 @@ interface Foto {
 const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".avi", ".MOV", ".MP4"];
 const isVideoUrl = (url: string) => VIDEO_EXTENSIONS.some(ext => url.toLowerCase().includes(ext.toLowerCase()));
 const getFotoTipo = (url: string) => isVideoUrl(url) ? "video" : "foto";
+
+const PHOTOS_PER_PAGE = 20;
 
 const getVisitorCookie = (): string => {
   const key = "chama_visitor";
@@ -56,14 +58,12 @@ const trackGalleryEvent = async (
   await supabase.from("galeria_analytics" as any).insert({
     foto_id: fotoId,
     tipo_evento: tipoEvento,
-    valor: valor ?? null,
     cookie_visitante: getVisitorCookie(),
     dispositivo,
     navegador,
   } as any);
 };
 
-// Skeleton card for loading state
 const SkeletonCard = () => (
   <div className="rounded-2xl overflow-hidden border bg-card animate-pulse">
     <div className="w-full aspect-[3/4] bg-muted" />
@@ -82,10 +82,12 @@ const GaleriaPublica = () => {
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<Foto | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PHOTOS_PER_PAGE);
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoStartTime = useRef<number>(0);
   const trackedPlayRef = useRef<string | null>(null);
   const autoOpenedRef = useRef(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -116,6 +118,27 @@ const GaleriaPublica = () => {
     load();
   }, []);
 
+  // Reset visible count when album changes
+  useEffect(() => {
+    setVisibleCount(PHOTOS_PER_PAGE);
+  }, [selectedAlbum]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleCount(prev => prev + PHOTOS_PER_PAGE);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fotos, selectedAlbum]);
+
   const trackVideoDuration = useCallback(() => {
     if (videoRef.current && lightbox && getFotoTipo(lightbox.url_foto) === "video" && videoStartTime.current > 0) {
       const duration = (Date.now() - videoStartTime.current) / 1000;
@@ -124,6 +147,10 @@ const GaleriaPublica = () => {
     }
   }, [lightbox]);
 
+  const filteredFotos = selectedAlbum
+    ? fotos.filter((f) => f.album_id === selectedAlbum)
+    : fotos;
+
   const openLightbox = useCallback((foto: Foto) => {
     setImgLoaded(false);
     setLightbox(foto);
@@ -131,6 +158,21 @@ const GaleriaPublica = () => {
     trackedPlayRef.current = null;
     videoStartTime.current = 0;
   }, []);
+
+  const navigateLightbox = useCallback((direction: -1 | 1) => {
+    if (!lightbox) return;
+    const idx = filteredFotos.findIndex(f => f.id === lightbox.id);
+    if (idx < 0) return;
+    const newIdx = idx + direction;
+    if (newIdx >= 0 && newIdx < filteredFotos.length) {
+      setImgLoaded(false);
+      const next = filteredFotos[newIdx];
+      setLightbox(next);
+      trackGalleryEvent(next.id, "visualizacao");
+      trackedPlayRef.current = null;
+      videoStartTime.current = 0;
+    }
+  }, [lightbox, filteredFotos]);
 
   // Auto-open photo from ?foto= query param
   useEffect(() => {
@@ -154,7 +196,6 @@ const GaleriaPublica = () => {
       if (found) setSelectedAlbum(found.id);
     }
   }, [albuns, searchParams, selectedAlbum]);
-
 
   const closeLightbox = useCallback(() => {
     trackVideoDuration();
@@ -182,12 +223,16 @@ const GaleriaPublica = () => {
     }
   }, [lightbox]);
 
-  // Close lightbox on Escape key
+  // Keyboard navigation: Escape, Left, Right
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeLightbox(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") navigateLightbox(-1);
+      if (e.key === "ArrowRight") navigateLightbox(1);
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [closeLightbox]);
+  }, [closeLightbox, navigateLightbox]);
 
   // Lock body scroll when lightbox is open
   useEffect(() => {
@@ -195,6 +240,19 @@ const GaleriaPublica = () => {
     else document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
   }, [lightbox]);
+
+  // Photo count per album
+  const albumPhotoCounts = new Map<string, number>();
+  fotos.forEach(f => {
+    if (f.album_id) {
+      albumPhotoCounts.set(f.album_id, (albumPhotoCounts.get(f.album_id) || 0) + 1);
+    }
+  });
+
+  // Lightbox index info
+  const lightboxIdx = lightbox ? filteredFotos.findIndex(f => f.id === lightbox.id) : -1;
+  const hasPrev = lightboxIdx > 0;
+  const hasNext = lightboxIdx >= 0 && lightboxIdx < filteredFotos.length - 1;
 
   if (galeriaAtiva === null || loading) {
     return (
@@ -226,9 +284,8 @@ const GaleriaPublica = () => {
     );
   }
 
-  const filteredFotos = selectedAlbum
-    ? fotos.filter((f) => f.album_id === selectedAlbum)
-    : fotos;
+  const visibleFotos = filteredFotos.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredFotos.length;
 
   return (
     <Layout>
@@ -244,7 +301,7 @@ const GaleriaPublica = () => {
             </p>
           </div>
 
-          {/* Album filter */}
+          {/* Album filter with counts */}
           {albuns.length > 0 && (
             <div className="flex flex-wrap justify-center gap-2 mb-10">
               <button
@@ -254,6 +311,7 @@ const GaleriaPublica = () => {
                 }`}
               >
                 Todas
+                <span className="ml-1.5 text-xs opacity-70">({fotos.length})</span>
               </button>
               {albuns.map((album) => (
                 <button
@@ -264,6 +322,7 @@ const GaleriaPublica = () => {
                   }`}
                 >
                   {album.nome}
+                  <span className="ml-1.5 text-xs opacity-70">({albumPhotoCounts.get(album.id) || 0})</span>
                 </button>
               ))}
             </div>
@@ -271,7 +330,7 @@ const GaleriaPublica = () => {
 
           {/* Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-            {filteredFotos.map((foto, i) => {
+            {visibleFotos.map((foto, i) => {
               const isVideo = getFotoTipo(foto.url_foto) === "video";
               return (
                 <div
@@ -328,6 +387,13 @@ const GaleriaPublica = () => {
             })}
           </div>
 
+          {/* Lazy load trigger */}
+          {hasMore && (
+            <div ref={loadMoreRef} className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+
           {filteredFotos.length === 0 && (
             <p className="text-center text-muted-foreground py-16">
               Nenhum conteúdo disponível neste álbum.
@@ -342,6 +408,7 @@ const GaleriaPublica = () => {
           className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 sm:p-6"
           onClick={closeLightbox}
         >
+          {/* Close */}
           <button
             onClick={closeLightbox}
             className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
@@ -349,6 +416,35 @@ const GaleriaPublica = () => {
           >
             <X className="h-5 w-5" />
           </button>
+
+          {/* Counter */}
+          {lightboxIdx >= 0 && (
+            <div className="absolute top-4 left-4 z-10 text-white/60 text-sm font-medium">
+              {lightboxIdx + 1} / {filteredFotos.length}
+            </div>
+          )}
+
+          {/* Prev */}
+          {hasPrev && (
+            <button
+              onClick={(e) => { e.stopPropagation(); navigateLightbox(-1); }}
+              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+              aria-label="Anterior"
+            >
+              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+            </button>
+          )}
+
+          {/* Next */}
+          {hasNext && (
+            <button
+              onClick={(e) => { e.stopPropagation(); navigateLightbox(1); }}
+              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+              aria-label="Próxima"
+            >
+              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+            </button>
+          )}
 
           <div
             className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-xl overflow-hidden bg-card shadow-2xl"
