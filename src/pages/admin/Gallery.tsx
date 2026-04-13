@@ -339,16 +339,6 @@ const Gallery = () => {
     }
   };
 
-  const toggleDestaqueHome = async (id: string, atual: boolean) => {
-    if (!ensureWriteEnabled()) return;
-    try {
-      await galleryAdmin({ action: "update-photo", id, updates: { destaque_home: !atual } });
-      toast.success(!atual ? "📌 Fixado na página inicial" : "Removido da página inicial");
-      await loadData();
-    } catch (error) {
-      handleActionError(error, "Erro ao alterar destaque.");
-    }
-  };
 
   const movePhotoToAlbum = async (photoId: string, albumId: string | null) => {
     if (!ensureWriteEnabled()) return;
