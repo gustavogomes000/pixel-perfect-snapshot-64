@@ -307,10 +307,10 @@ const GaleriaPublica = () => {
           {/* Album filter with counts */}
           {albuns.length > 0 && (
             <div className="mb-10">
-              <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2 px-2">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-center items-center gap-2 px-2">
                 <button
                   onClick={() => setSelectedAlbum(null)}
-                  className={`rounded-full px-4 py-2.5 text-sm font-medium border transition-colors text-center whitespace-nowrap ${
+                  className={`w-full sm:w-auto rounded-full px-5 py-2.5 text-sm font-medium border transition-colors text-center ${
                     !selectedAlbum ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
                   }`}
                 >
@@ -322,7 +322,7 @@ const GaleriaPublica = () => {
                     <button
                       key={album.id}
                       onClick={() => setSelectedAlbum(album.id)}
-                      className={`rounded-full px-4 py-2.5 text-sm font-medium border transition-colors text-center truncate ${
+                      className={`w-full sm:w-auto rounded-full px-5 py-2.5 text-sm font-medium border transition-colors text-center ${
                         isActive ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
                       }`}
                     >
