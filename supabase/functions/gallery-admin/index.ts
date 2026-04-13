@@ -142,6 +142,22 @@ Deno.serve(async (req) => {
         return json({ success: true });
       }
 
+      // ── Ensure schema (idempotent) ──
+      case "ensure-schema": {
+        const { data, error } = await ext.rpc("exec_sql" as any, {
+          sql: "ALTER TABLE public.albuns ADD COLUMN IF NOT EXISTS fixado_home boolean NOT NULL DEFAULT false;"
+        });
+        // If rpc doesn't exist, try direct query approach
+        if (error) {
+          // Try a simpler check - just try to select the column
+          const { error: checkErr } = await ext.from("albuns").select("fixado_home").limit(1);
+          if (checkErr) {
+            return json({ success: false, error: "Column fixado_home missing. Run: ALTER TABLE public.albuns ADD COLUMN IF NOT EXISTS fixado_home boolean NOT NULL DEFAULT false;", needsManualMigration: true });
+          }
+        }
+        return json({ success: true });
+      }
+
       // ── Config ──
       case "update-config": {
         const { chave, valor } = body;
