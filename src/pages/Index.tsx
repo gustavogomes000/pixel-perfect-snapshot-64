@@ -47,79 +47,60 @@ const redes = [
   { icon: Instagram, label: "Instagram", handle: "@drafernandasarelli", url: "https://www.instagram.com/drafernandasarelli/" },
 ];
 
-interface HomeGalleryItem {
+interface HomeAlbum {
   id: string;
-  titulo: string;
-  legenda: string | null;
-  url_foto: string;
-  tipo: string;
-  ordem: number;
-  evento: string | null;
+  nome: string;
+  capa_url: string | null;
+  fixado_home: boolean;
+  atualizado_em: string;
+  foto_count: number;
+  first_photo_url: string | null;
 }
 
 const Index = () => {
-  const [galeriaItems, setGaleriaItems] = useState<HomeGalleryItem[]>([]);
+  const [homeAlbuns, setHomeAlbuns] = useState<HomeAlbum[]>([]);
   const [galeriaAtiva, setGaleriaAtiva] = useState(false);
-  const [galeriaFiltro, setGaleriaFiltro] = useState<"todos" | "foto" | "video" | "eventos">("todos");
-  const [lightbox, setLightbox] = useState<HomeGalleryItem | null>(null);
-  const [imgLoaded, setImgLoaded] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const { events: proximosEventos, loading: eventosLoading, error: eventosError } = useGoogleCalendar({ filter: "proximos", limit: 3 });
   const eventos = Array.isArray(proximosEventos) ? proximosEventos : [];
 
-  const openLightbox = useCallback((item: HomeGalleryItem) => {
-    setImgLoaded(false);
-    setLightbox(item);
-  }, []);
-
-  const closeLightbox = useCallback(() => {
-    if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ""; }
-    setLightbox(null);
-    setImgLoaded(false);
-  }, []);
-
-  useEffect(() => {
-    if (!lightbox) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeLightbox(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [lightbox, closeLightbox]);
-
-  useEffect(() => {
-    if (lightbox) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-    return () => { document.body.style.overflow = ""; };
-  }, [lightbox]);
-
   useEffect(() => {
     const loadGaleria = async () => {
-      // Fetch config + both query variants in parallel
-      const [ativa, destaquesResult, fallbackResult] = await Promise.all([
+      const [ativa, albumsResult, fotosResult] = await Promise.all([
         getGaleriaAtiva(),
-        (supabase.from("galeria_fotos").select("*") as any)
-          .eq("visivel", true)
-          .eq("destaque_home", true)
-          .order("ordem")
-          .limit(12),
-        supabase.from("galeria_fotos").select("*").eq("visivel", true).order("ordem").limit(12),
+        supabase.from("albuns" as any).select("*").order("ordem"),
+        supabase.from("galeria_fotos").select("id, url_foto, album_id").eq("visivel", true),
       ]);
 
       setGaleriaAtiva(ativa);
       if (!ativa) return;
 
-      const raw = destaquesResult.data?.length > 0 ? destaquesResult.data : fallbackResult.data;
-      if (raw) {
-        setGaleriaItems((raw as any[]).map(d => ({
-          id: d.id,
-          titulo: d.titulo,
-          legenda: d.legenda,
-          url_foto: d.url_foto,
-          tipo: getItemTipo(d.url_foto),
-          ordem: d.ordem ?? 0,
-          evento: d.evento || null,
-        })));
-      }
+      const allAlbums = (albumsResult.data as any[] || []);
+      const allFotos = (fotosResult.data as any[] || []);
+
+      // Build album list with photo counts and first photo
+      const albumsWithData: HomeAlbum[] = allAlbums.map((a: any) => {
+        const albumFotos = allFotos.filter((f: any) => f.album_id === a.id);
+        return {
+          id: a.id,
+          nome: a.nome,
+          capa_url: a.capa_url || null,
+          fixado_home: !!a.fixado_home,
+          atualizado_em: a.atualizado_em,
+          foto_count: albumFotos.length,
+          first_photo_url: albumFotos[0]?.url_foto || null,
+        };
+      });
+
+      // Sort: pinned first, then by atualizado_em desc
+      albumsWithData.sort((a, b) => {
+        if (a.fixado_home && !b.fixado_home) return -1;
+        if (!a.fixado_home && b.fixado_home) return 1;
+        return new Date(b.atualizado_em).getTime() - new Date(a.atualizado_em).getTime();
+      });
+
+      // Show up to 6
+      setHomeAlbuns(albumsWithData.slice(0, 6));
     };
 
     loadGaleria();
