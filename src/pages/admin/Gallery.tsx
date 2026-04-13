@@ -1373,7 +1373,7 @@ const Gallery = () => {
                           }`}
                           title="Definir como capa da pasta"
                         >
-                          <ImageIcon className="h-3 w-3" />
+                          <Camera className="h-3 w-3" />
                         </button>
                       )}
 
