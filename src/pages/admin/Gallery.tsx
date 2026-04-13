@@ -1214,92 +1214,7 @@ const Gallery = () => {
           </DialogContent>
         </Dialog>
 
-        {/* ===== DESTAQUES DA HOME (reorder) ===== */}
-        {(() => {
-          const destaques = fotos.filter(f => f.destaque_home).sort((a, b) => a.ordem - b.ordem);
-          if (destaques.length === 0) return null;
-
-          const swapOrdem = async (idx: number, direction: "up" | "down") => {
-            const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-            if (swapIdx < 0 || swapIdx >= destaques.length || !ensureWriteEnabled()) return;
-            const a = destaques[idx];
-            const b2 = destaques[swapIdx];
-            try {
-              await Promise.all([
-                galleryAdmin({ action: "update-photo", id: a.id, updates: { ordem: b2.ordem } }),
-                galleryAdmin({ action: "update-photo", id: b2.id, updates: { ordem: a.ordem } }),
-              ]);
-              toast.success("Ordem atualizada");
-              await loadData();
-            } catch (error) {
-              handleActionError(error, "Erro ao reordenar destaques.");
-            }
-          };
-
-          return (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Pin className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-primary uppercase tracking-wider">Destaques da Home</span>
-                <span className="text-xs text-muted-foreground">({destaques.length} itens — arraste para reordenar)</span>
-              </div>
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                {destaques.map((item, idx) => {
-                  const isVideo = getFotoTipo(item.url_foto) === "video";
-                  return (
-                    <div key={item.id} className="shrink-0 w-32 rounded-xl border-2 border-primary/30 bg-card overflow-hidden relative">
-                      {/* Position number */}
-                      <div className="absolute top-1 left-1 z-10 h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
-                        {idx + 1}
-                      </div>
-                      {/* Type badge */}
-                      {isVideo && (
-                        <div className="absolute top-1 right-1 z-10">
-                          <span className="bg-blue-600 text-white text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5">
-                            <Play className="h-2 w-2" /> Vídeo
-                          </span>
-                        </div>
-                      )}
-                      {/* Thumbnail */}
-                      {isVideo ? (
-                        <video src={item.url_foto} className="w-full aspect-[3/4] object-contain bg-muted" muted preload="none" poster={decodeThumbnail(item.legenda) || undefined} />
-                      ) : (
-                        <img src={item.url_foto} alt={item.titulo} className="w-full aspect-[3/4] object-contain bg-muted" />
-                      )}
-                      {/* Reorder + unpin controls */}
-                      <div className="flex items-center justify-between p-1.5 gap-0.5">
-                        <button
-                          onClick={() => swapOrdem(idx, "up")}
-                          disabled={idx === 0}
-                          className="h-6 w-6 flex items-center justify-center rounded bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
-                          title="Mover para esquerda"
-                        >
-                          <ArrowLeft className="h-3 w-3" />
-                        </button>
-                        <p className="text-[9px] font-medium truncate flex-1 text-center">{item.titulo}</p>
-                        <button
-                          onClick={() => swapOrdem(idx, "down")}
-                          disabled={idx === destaques.length - 1}
-                          className="h-6 w-6 flex items-center justify-center rounded bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
-                          title="Mover para direita"
-                        >
-                          <ArrowRight className="h-3 w-3" />
-                        </button>
-                        <button
-                          onClick={() => toggleDestaqueHome(item.id, true)}
-                          className="h-6 w-6 flex items-center justify-center rounded bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground transition-colors ml-0.5"
-                          title="Remover da home"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
+        {/* Destaques da home removidos — apenas pastas fixadas aparecem na home */}
 
         {/* ===== MEDIA GRID ===== */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -1328,11 +1243,6 @@ const Gallery = () => {
                   {isVideo && (
                     <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                       <Play className="h-2.5 w-2.5" /> Vídeo
-                    </span>
-                  )}
-                  {foto.destaque_home && (
-                    <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                      <Pin className="h-2.5 w-2.5" /> Home
                     </span>
                   )}
                   {!foto.visivel && (
@@ -1444,14 +1354,6 @@ const Gallery = () => {
                         );
                       })()}
 
-                      <button
-                        onClick={() => toggleDestaqueHome(foto.id, !!foto.destaque_home)}
-                        className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
-                          foto.destaque_home ? "bg-primary text-primary-foreground" : "bg-accent hover:bg-accent/80"
-                        }`}
-                      >
-                        <Pin className="h-3 w-3" />
-                      </button>
 
                       <button
                         className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent hover:bg-destructive hover:text-destructive-foreground transition-colors ml-auto"
