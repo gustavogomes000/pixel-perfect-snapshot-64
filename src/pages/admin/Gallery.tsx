@@ -277,6 +277,28 @@ const Gallery = () => {
     }
   };
 
+  const toggleAlbumPin = async (albumId: string, currentPinned: boolean) => {
+    if (!ensureWriteEnabled()) return;
+    try {
+      await galleryAdmin({ action: "update-album", id: albumId, fixado_home: !currentPinned });
+      toast.success(!currentPinned ? "📌 Pasta fixada na home" : "Pasta removida da home");
+      await loadData();
+    } catch (error) {
+      handleActionError(error, "Erro ao fixar/desfixar pasta.");
+    }
+  };
+
+  const setAlbumCover = async (albumId: string, coverUrl: string) => {
+    if (!ensureWriteEnabled()) return;
+    try {
+      await galleryAdmin({ action: "update-album", id: albumId, capa_url: coverUrl });
+      toast.success("Capa da pasta atualizada!");
+      await loadData();
+    } catch (error) {
+      handleActionError(error, "Erro ao definir capa.");
+    }
+  };
+
   const moveAlbum = async (albumId: string, direction: "left" | "right") => {
     const idx = albuns.findIndex((a) => a.id === albumId);
     if (idx < 0 || !ensureWriteEnabled()) return;
