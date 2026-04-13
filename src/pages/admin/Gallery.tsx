@@ -898,6 +898,7 @@ const Gallery = () => {
                         : "bg-card border-border hover:bg-accent hover:border-primary/30"
                     }`}
                   >
+                    {album.fixado_home && <Pin className="h-3 w-3" />}
                     📁 {album.nome}
                     <span className={`text-xs rounded-full px-1.5 py-0.5 ${isSelected ? "bg-primary-foreground/20" : "bg-muted"}`}>
                       {count}
@@ -916,6 +917,15 @@ const Gallery = () => {
                           <ArrowRight className="h-3.5 w-3.5" />
                         </button>
                       )}
+                      <button
+                        onClick={() => toggleAlbumPin(album.id, !!album.fixado_home)}
+                        className={`h-7 w-7 flex items-center justify-center rounded-lg border transition-colors ${
+                          album.fixado_home ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                        }`}
+                        title={album.fixado_home ? "Remover da home" : "Fixar na home"}
+                      >
+                        <Pin className="h-3.5 w-3.5" />
+                      </button>
                       <button
                         onClick={() => { setEditAlbumId(album.id); setEditAlbumName(album.nome); setEditAlbumOpen(true); }}
                         className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent border"
