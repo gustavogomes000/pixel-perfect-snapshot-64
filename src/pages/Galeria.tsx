@@ -306,44 +306,54 @@ const GaleriaPublica = () => {
 
           {/* Album filter with counts */}
           {albuns.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-2 mb-10">
-              <button
-                onClick={() => setSelectedAlbum(null)}
-                className={`rounded-full px-5 py-2 text-sm font-medium border transition-colors ${
-                  !selectedAlbum ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
-                }`}
-              >
-                Todas
-                <span className="ml-1.5 text-xs opacity-70">({fotos.length})</span>
-              </button>
-              {albuns.map((album) => (
-                <div key={album.id} className="flex items-center gap-1">
-                  <button
-                    onClick={() => setSelectedAlbum(album.id)}
-                    className={`rounded-full px-5 py-2 text-sm font-medium border transition-colors ${
-                      selectedAlbum === album.id ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
-                    }`}
-                  >
-                    {album.nome}
-                    <span className="ml-1.5 text-xs opacity-70">({albumPhotoCounts.get(album.id) || 0})</span>
-                  </button>
-                  {selectedAlbum === album.id && (
+            <div className="mb-10">
+              <div className="flex gap-2 overflow-x-auto pb-2 px-1 -mx-1 scrollbar-none justify-center flex-wrap sm:flex-wrap">
+                <button
+                  onClick={() => setSelectedAlbum(null)}
+                  className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium border transition-colors ${
+                    !selectedAlbum ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
+                  }`}
+                >
+                  Todas
+                  <span className="ml-1.5 text-xs opacity-70">({fotos.length})</span>
+                </button>
+                {albuns.map((album) => {
+                  const isActive = selectedAlbum === album.id;
+                  return (
                     <button
-                      onClick={async (e) => {
-                        e.stopPropagation();
+                      key={album.id}
+                      onClick={() => setSelectedAlbum(album.id)}
+                      className={`shrink-0 rounded-full px-4 py-2 text-sm font-medium border transition-colors flex items-center gap-1.5 ${
+                        isActive ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
+                      }`}
+                    >
+                      {album.nome}
+                      <span className="text-xs opacity-70">({albumPhotoCounts.get(album.id) || 0})</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Share bar for selected album */}
+              {selectedAlbum && (() => {
+                const album = albuns.find(a => a.id === selectedAlbum);
+                if (!album) return null;
+                return (
+                  <div className="flex items-center justify-center gap-2 mt-3">
+                    <button
+                      onClick={async () => {
                         const albumUrl = `${window.location.origin}/galeria?album=${album.id}`;
                         const texto = `📸 ${album.nome} — Galeria Fernanda Sarelli\n\n👉 Veja as fotos: ${albumUrl}`;
                         if (navigator.share) {
                           try {
                             await navigator.share({ title: album.nome, text: texto, url: albumUrl });
                             return;
-                          } catch { /* cancelled or failed, fall through to clipboard */ }
+                          } catch { /* cancelled */ }
                         }
                         try {
                           await navigator.clipboard.writeText(texto);
                           toast.success("🔗 Link copiado!");
                         } catch {
-                          // Fallback for older browsers / iframes
                           const ta = document.createElement("textarea");
                           ta.value = texto;
                           ta.style.position = "fixed";
@@ -355,14 +365,14 @@ const GaleriaPublica = () => {
                           toast.success("🔗 Link copiado!");
                         }
                       }}
-                      className="rounded-full h-8 w-8 flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                      title="Compartilhar pasta"
+                      className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
                     >
-                      <Share2 className="h-4 w-4" />
+                      <Share2 className="h-3.5 w-3.5" />
+                      Compartilhar pasta
                     </button>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })()}
             </div>
           )}
 
