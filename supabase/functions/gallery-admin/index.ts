@@ -180,6 +180,17 @@ Deno.serve(async (req) => {
         return json({ success: true });
       }
 
+      // ── Create signed upload URL ──
+      case "create-upload-url": {
+        const { path: filePath } = body;
+        const CLOUD_URL = Deno.env.get("SUPABASE_URL")!;
+        const CLOUD_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const cloudClient = createClient(CLOUD_URL, CLOUD_SERVICE_KEY);
+        const { data, error } = await cloudClient.storage.from("galeria").createSignedUploadUrl(filePath);
+        if (error) throw error;
+        return json({ success: true, signedUrl: data.signedUrl, token: data.token, path: data.path });
+      }
+
       // ── Test data ──
       case "delete-test-photos": {
         const { urls } = body;
