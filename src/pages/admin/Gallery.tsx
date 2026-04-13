@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Plus, Trash2, Eye, EyeOff, Upload, FolderPlus, Sparkles, Eraser,
   Pin, Pencil, ArrowLeft, ArrowRight, Check, X, FolderOpen, ImagePlus,
-  Move, ChevronDown, Camera, Images, Video, Play, Crosshair
+  Move, ChevronDown, Camera, Images, Video, Play, Crosshair, Share2, Link
 } from "lucide-react";
 import FocalPointPicker, { encodeFocalPoint, decodeFocalPoint, getFocalStyle, decodeThumbnail } from "@/components/admin/FocalPointPicker";
 import { supabase } from "@/lib/supabaseDb";
@@ -978,6 +978,17 @@ const Gallery = () => {
                         title={album.fixado_home ? "Remover da home" : "Fixar na home"}
                       >
                         <Pin className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          const albumUrl = `${window.location.origin}/galeria?album=${album.id}`;
+                          navigator.clipboard.writeText(albumUrl);
+                          toast.success("🔗 Link da pasta copiado!");
+                        }}
+                        className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent border"
+                        title="Copiar link da pasta"
+                      >
+                        <Share2 className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => { setEditAlbumId(album.id); setEditAlbumName(album.nome); setEditAlbumOpen(true); }}

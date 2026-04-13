@@ -317,16 +317,37 @@ const GaleriaPublica = () => {
                 <span className="ml-1.5 text-xs opacity-70">({fotos.length})</span>
               </button>
               {albuns.map((album) => (
-                <button
-                  key={album.id}
-                  onClick={() => setSelectedAlbum(album.id)}
-                  className={`rounded-full px-5 py-2 text-sm font-medium border transition-colors ${
-                    selectedAlbum === album.id ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
-                  }`}
-                >
-                  {album.nome}
-                  <span className="ml-1.5 text-xs opacity-70">({albumPhotoCounts.get(album.id) || 0})</span>
-                </button>
+                <div key={album.id} className="flex items-center gap-1">
+                  <button
+                    onClick={() => setSelectedAlbum(album.id)}
+                    className={`rounded-full px-5 py-2 text-sm font-medium border transition-colors ${
+                      selectedAlbum === album.id ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
+                    }`}
+                  >
+                    {album.nome}
+                    <span className="ml-1.5 text-xs opacity-70">({albumPhotoCounts.get(album.id) || 0})</span>
+                  </button>
+                  {selectedAlbum === album.id && (
+                    <button
+                      onClick={async () => {
+                        const albumUrl = `${window.location.origin}/galeria?album=${album.id}`;
+                        const texto = `📸 ${album.nome} — Galeria Fernanda Sarelli\n\n👉 Veja as fotos: ${albumUrl}`;
+                        if (navigator.share) {
+                          try {
+                            await navigator.share({ title: album.nome, text: texto, url: albumUrl });
+                          } catch { /* cancelled */ }
+                        } else {
+                          await navigator.clipboard.writeText(texto);
+                          toast.success("Link copiado!");
+                        }
+                      }}
+                      className="rounded-full h-8 w-8 flex items-center justify-center bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                      title="Compartilhar pasta"
+                    >
+                      <Share2 className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
               ))}
             </div>
           )}
