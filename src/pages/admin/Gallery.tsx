@@ -460,9 +460,9 @@ const Gallery = () => {
     setUploadProgress(0);
 
     const toastId = `upload-${Date.now()}`;
-    toast.loading(`Enviando ${items.length} arquivo(s)...`, { id: toastId });
+    toast.loading(`Preparando ${items.length} arquivo(s)...`, { id: toastId });
 
-    // Compress all images in parallel first
+    // 1. Compress all images in parallel
     const prepared = await Promise.all(
       items.map(async (item) => {
         const isVideo = isVideoFile(item.file);
@@ -471,11 +471,45 @@ const Gallery = () => {
       })
     );
 
-    let successCount = 0;
-    let done = 0;
+    // 2. Build all paths and get signed URLs in a single batch request
+    const allPaths: string[] = [];
+    const thumbPaths: (string | null)[] = [];
 
-    // Upload up to 3 files in parallel
+    for (const { fileToUpload, isVideo, thumbnailDataUrl } of prepared) {
+      const sanitizedName = fileToUpload.name.replace(/\s+/g, "-").toLowerCase();
+      const folder = isVideo ? "videos" : "galeria";
+      const uid = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      allPaths.push(`${folder}/${uid}_${sanitizedName}`);
+
+      if (isVideo && thumbnailDataUrl) {
+        const tp = `thumbnails/${uid}.jpg`;
+        thumbPaths.push(tp);
+      } else {
+        thumbPaths.push(null);
+      }
+    }
+
+    const pathsToSign = [...allPaths, ...thumbPaths.filter(Boolean) as string[]];
+
+    let signedUrlMap: Map<string, string>;
+    try {
+      const result = await galleryAdmin({ action: "create-upload-urls", paths: pathsToSign });
+      const urls = result.urls as Array<{ path: string; signedUrl?: string; error?: string }>;
+      signedUrlMap = new Map(urls.filter(u => u.signedUrl).map(u => [u.path, u.signedUrl!]));
+    } catch {
+      toast.error("Erro ao preparar URLs de upload");
+      setUploading(false);
+      toast.dismiss(toastId);
+      return;
+    }
+
+    toast.loading(`Enviando ${items.length} arquivo(s)...`, { id: toastId });
+
+    // 3. Upload files in parallel (concurrency 3)
+    let done = 0;
+    const successfulPhotos: Array<Record<string, unknown>> = [];
     const CONCURRENCY = 3;
+
     const chunks: typeof prepared[] = [];
     for (let i = 0; i < prepared.length; i += CONCURRENCY) {
       chunks.push(prepared.slice(i, i + CONCURRENCY));
@@ -483,85 +517,87 @@ const Gallery = () => {
 
     for (const chunk of chunks) {
       await Promise.allSettled(
-        chunk.map(async ({ file, fileToUpload, focalX, focalY, zoom, isVideo, thumbnailDataUrl }) => {
-          const sanitizedName = fileToUpload.name.replace(/\s+/g, "-").toLowerCase();
-          const folder = isVideo ? "videos" : "galeria";
-          const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}_${sanitizedName}`;
-          
-          // Get signed upload URL from edge function (uses service role)
-          let signedUrl: string;
-          try {
-            const urlResult = await galleryAdmin({ action: "create-upload-url", path });
-            signedUrl = urlResult.signedUrl as string;
-          } catch (err) {
-            toast.error(`Erro ao preparar upload: "${file.name}"`);
+        chunk.map(async (item, chunkIdx) => {
+          const idx = prepared.indexOf(item);
+          const mainPath = allPaths[idx];
+          const thumbPath = thumbPaths[idx];
+          const signedUrl = signedUrlMap.get(mainPath);
+
+          if (!signedUrl) {
+            toast.error(`Sem URL para "${item.file.name}"`);
+            done++;
+            setUploadProgress(Math.round((done / prepared.length) * 100));
             return;
           }
 
-          // Upload directly to signed URL
+          // Upload main file
           const uploadRes = await fetch(signedUrl, {
             method: "PUT",
-            headers: { "Content-Type": fileToUpload.type || "application/octet-stream" },
-            body: fileToUpload,
+            headers: { "Content-Type": item.fileToUpload.type || "application/octet-stream" },
+            body: item.fileToUpload,
           });
 
           if (!uploadRes.ok) {
-            toast.error(`Erro: "${file.name}" — falha no upload (${uploadRes.status})`);
+            toast.error(`Erro: "${item.file.name}" (${uploadRes.status})`);
+            done++;
+            setUploadProgress(Math.round((done / prepared.length) * 100));
             return;
           }
 
-          const { data: urlData } = cloudSupabase.storage.from("galeria").getPublicUrl(path);
+          const { data: urlData } = cloudSupabase.storage.from("galeria").getPublicUrl(mainPath);
 
-          // Upload video thumbnail if available
+          // Upload thumbnail if needed
           let legendaBase: string | null = null;
-          if (isVideo && thumbnailDataUrl) {
-            try {
-              const res = await fetch(thumbnailDataUrl);
-              const blob = await res.blob();
-              const thumbPath = `thumbnails/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-              const thumbUrlResult = await galleryAdmin({ action: "create-upload-url", path: thumbPath });
-              const thumbSignedUrl = thumbUrlResult.signedUrl as string;
-              const thumbUploadRes = await fetch(thumbSignedUrl, {
-                method: "PUT",
-                headers: { "Content-Type": "image/jpeg" },
-                body: blob,
-              });
-              if (thumbUploadRes.ok) {
-                const { data: thumbUrl } = cloudSupabase.storage.from("galeria").getPublicUrl(thumbPath);
-                legendaBase = `[tn:${thumbUrl.publicUrl}]`;
-              }
-            } catch {
-              // thumbnail upload failed, continue without it
+          if (item.isVideo && item.thumbnailDataUrl && thumbPath) {
+            const thumbSignedUrl = signedUrlMap.get(thumbPath);
+            if (thumbSignedUrl) {
+              try {
+                const res = await fetch(item.thumbnailDataUrl);
+                const blob = await res.blob();
+                const thumbRes = await fetch(thumbSignedUrl, {
+                  method: "PUT",
+                  headers: { "Content-Type": "image/jpeg" },
+                  body: blob,
+                });
+                if (thumbRes.ok) {
+                  const { data: thumbUrl } = cloudSupabase.storage.from("galeria").getPublicUrl(thumbPath);
+                  legendaBase = `[tn:${thumbUrl.publicUrl}]`;
+                }
+              } catch { /* skip thumbnail */ }
             }
           }
 
-          try {
-            const legendaWithFp = encodeFocalPoint(legendaBase, focalX, focalY, zoom);
-            await galleryAdmin({ action: "insert-photo", photo: {
-              titulo: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
-              url_foto: urlData.publicUrl,
-              album_id: selectedAlbum,
-              visivel: true,
-              legenda: legendaWithFp || null,
-            }});
-            successCount += 1;
-          } catch (error) {
-            handleActionError(error, `Erro ao salvar "${file.name}"`);
-          }
+          const legendaWithFp = encodeFocalPoint(legendaBase, item.focalX, item.focalY, item.zoom);
+          successfulPhotos.push({
+            titulo: item.file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
+            url_foto: urlData.publicUrl,
+            album_id: selectedAlbum,
+            visivel: true,
+            legenda: legendaWithFp || null,
+          });
 
-          done += 1;
+          done++;
           setUploadProgress(Math.round((done / prepared.length) * 100));
           toast.loading(`Enviando… ${done}/${prepared.length}`, { id: toastId });
         })
       );
     }
 
+    // 4. Batch insert all photos in a single DB call
+    if (successfulPhotos.length > 0) {
+      try {
+        await galleryAdmin({ action: "insert-photos", photos: successfulPhotos });
+      } catch (error) {
+        handleActionError(error, "Erro ao salvar fotos no banco.");
+      }
+    }
+
     setUploadProgress(100);
     setUploading(false);
     toast.dismiss(toastId);
 
-    if (successCount > 0) {
-      toast.success(`✅ ${successCount} arquivo(s) enviado(s) com sucesso!`);
+    if (successfulPhotos.length > 0) {
+      toast.success(`✅ ${successfulPhotos.length} arquivo(s) enviado(s) com sucesso!`);
       await loadData();
     }
   };

@@ -380,11 +380,6 @@ const Index = () => {
                           <span className="text-xs">Sem capa</span>
                         </div>
                       )}
-                      {album.fixado_home && (
-                        <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-medium">
-                          📌 Fixado
-                        </div>
-                      )}
                       <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8">
                         <p className="text-white text-sm sm:text-base font-semibold truncate">{album.nome}</p>
                         <p className="text-white/70 text-xs">{album.foto_count} foto(s)</p>

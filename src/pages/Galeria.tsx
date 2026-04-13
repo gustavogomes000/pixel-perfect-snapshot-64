@@ -52,16 +52,19 @@ const getDeviceInfo = () => {
 const trackGalleryEvent = async (
   fotoId: string,
   tipoEvento: "visualizacao" | "play_video" | "duracao_video",
-  valor?: number
 ) => {
-  const { dispositivo, navegador } = getDeviceInfo();
-  await supabase.from("galeria_analytics" as any).insert({
-    foto_id: fotoId,
-    tipo_evento: tipoEvento,
-    cookie_visitante: getVisitorCookie(),
-    dispositivo,
-    navegador,
-  } as any);
+  try {
+    const { dispositivo, navegador } = getDeviceInfo();
+    await supabase.from("galeria_analytics" as any).insert({
+      foto_id: fotoId,
+      tipo_evento: tipoEvento,
+      cookie_visitante: getVisitorCookie(),
+      dispositivo,
+      navegador,
+    } as any);
+  } catch {
+    // silently fail - analytics should never break UX
+  }
 };
 
 const SkeletonCard = () => (
@@ -142,7 +145,7 @@ const GaleriaPublica = () => {
   const trackVideoDuration = useCallback(() => {
     if (videoRef.current && lightbox && getFotoTipo(lightbox.url_foto) === "video" && videoStartTime.current > 0) {
       const duration = (Date.now() - videoStartTime.current) / 1000;
-      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video", Math.round(duration));
+      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video");
       videoStartTime.current = 0;
     }
   }, [lightbox]);
@@ -218,7 +221,7 @@ const GaleriaPublica = () => {
   const handleVideoPause = useCallback(() => {
     if (lightbox && videoStartTime.current > 0) {
       const duration = (Date.now() - videoStartTime.current) / 1000;
-      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video", Math.round(duration));
+      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video");
       videoStartTime.current = 0;
     }
   }, [lightbox]);
