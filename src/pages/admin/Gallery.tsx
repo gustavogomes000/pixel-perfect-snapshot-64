@@ -1363,6 +1363,20 @@ const Gallery = () => {
                         {foto.visivel ? <Eye className="h-3 w-3 text-primary" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
                       </button>
 
+                      {foto.album_id && !getFotoTipo(foto.url_foto).includes("video") && (
+                        <button
+                          onClick={() => setAlbumCover(foto.album_id!, foto.url_foto)}
+                          className={`flex h-7 items-center gap-1 px-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+                            albuns.find(a => a.id === foto.album_id)?.capa_url === foto.url_foto
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-accent hover:bg-accent/80"
+                          }`}
+                          title="Definir como capa da pasta"
+                        >
+                          <ImageIcon className="h-3 w-3" />
+                        </button>
+                      )}
+
                       <button
                         onClick={() => toggleDestaqueHome(foto.id, !!foto.destaque_home)}
                         className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
