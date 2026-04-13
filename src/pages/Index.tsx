@@ -347,7 +347,7 @@ const Index = () => {
         </div>
       </section>
 
-      {galeriaAtiva && (
+      {galeriaAtiva && homeAlbuns.length > 0 && (
       <section className="py-16 md:py-20">
         <div className="container">
           <ScrollReveal>
@@ -360,105 +360,52 @@ const Index = () => {
             </div>
           </ScrollReveal>
 
-          {/* Filter tabs */}
-          {galeriaItems.length > 0 && (
-            <ScrollReveal delay={0.05}>
-              <div className="flex justify-start sm:justify-center gap-2 mt-8 overflow-x-auto pb-2 px-1 -mx-1 scrollbar-hide">
-                {(["todos", "foto", "video", "eventos"] as const).map((filtro) => {
-                  const labels = { todos: "Todos", foto: "📷 Fotos", video: "🎬 Vídeos", eventos: "📅 Eventos" };
-                  const getCount = (f: typeof filtro) => {
-                    if (f === "todos") return galeriaItems.length;
-                    if (f === "eventos") return galeriaItems.filter(i => !!i.evento).length;
-                    return galeriaItems.filter(i => (i.tipo || "foto") === f).length;
-                  };
-                  const count = getCount(filtro);
-                  if (filtro !== "todos" && count === 0) return null;
-                  return (
-                    <button
-                      key={filtro}
-                      onClick={() => setGaleriaFiltro(filtro)}
-                      className={`rounded-full px-4 py-2 text-xs sm:text-sm font-medium border transition-colors whitespace-nowrap flex-shrink-0 ${
-                        galeriaFiltro === filtro
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-card border-border hover:bg-accent"
-                      }`}
-                    >
-                      {labels[filtro]} ({count})
-                    </button>
-                  );
-                })}
-              </div>
-            </ScrollReveal>
-          )}
-
-          {(() => {
-            const filtered = galeriaFiltro === "todos"
-              ? galeriaItems
-              : galeriaFiltro === "eventos"
-              ? galeriaItems.filter(i => !!i.evento)
-              : galeriaItems.filter(i => (i.tipo || "foto") === galeriaFiltro);
-            const display = filtered.slice(0, 9);
-
-            return display.length > 0 ? (
-              <div className="mt-6 sm:mt-10 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-3 md:gap-4">
-                {display.map((item, i) => {
-                  const isVideo = (item.tipo || "foto") === "video";
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => openLightbox(item)}
-                      className="group text-left block overflow-hidden rounded-xl sm:rounded-2xl border bg-card transition-shadow hover:shadow-lg active:scale-[0.98] w-full"
-                    >
-                      <div className="aspect-square overflow-hidden relative bg-muted flex items-center justify-center">
-                        {isVideo ? (
-                          <>
-                            <video
-                              src={item.url_foto}
-                              className="h-full w-full object-contain"
-                              muted
-                              preload={decodeThumbnail(item.legenda) ? "none" : "metadata"}
-                              playsInline
-                              poster={decodeThumbnail(item.legenda) || undefined}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_0_4px_rgba(255,255,255,0.35)] group-hover:scale-110 group-hover:shadow-[0_0_0_6px_rgba(255,255,255,0.45)] transition-all duration-200">
-                                <Play className="h-5 w-5 sm:h-6 sm:w-6 text-white ml-0.5" fill="white" />
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <img
-                            src={item.url_foto}
-                            alt={item.legenda ? decodeFocalPoint(item.legenda).cleanLegenda || item.titulo : item.titulo}
-                            className="h-full w-full object-contain"
-                            loading={i < 4 ? "eager" : "lazy"}
-                            decoding="async"
-                          />
-                        )}
+          <div className="mt-8 sm:mt-10 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
+            {homeAlbuns.map((album, i) => {
+              const coverUrl = album.capa_url || album.first_photo_url;
+              return (
+                <ScrollReveal key={album.id} delay={i * 0.05}>
+                  <Link
+                    to={`/galeria?album=${album.id}`}
+                    className="group block overflow-hidden rounded-xl sm:rounded-2xl border bg-card transition-shadow hover:shadow-lg active:scale-[0.98]"
+                  >
+                    <div className="aspect-square overflow-hidden relative bg-muted flex items-center justify-center">
+                      {coverUrl ? (
+                        <img
+                          src={coverUrl}
+                          alt={album.nome}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading={i < 4 ? "eager" : "lazy"}
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Calendar className="h-10 w-10" />
+                          <span className="text-xs">Sem capa</span>
+                        </div>
+                      )}
+                      {album.fixado_home && (
+                        <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-medium">
+                          📌 Fixado
+                        </div>
+                      )}
+                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8">
+                        <p className="text-white text-sm sm:text-base font-semibold truncate">{album.nome}</p>
+                        <p className="text-white/70 text-xs">{album.foto_count} foto(s)</p>
                       </div>
-                      <div className="p-2 sm:p-3">
-                        <p className="text-xs sm:text-sm font-medium truncate">{item.titulo}</p>
-                        {item.evento && (
-                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5">{item.evento}</p>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="mt-10 text-center py-10">
-                <p className="text-muted-foreground">Em breve novos conteúdos serão publicados aqui.</p>
-              </div>
-            );
-          })()}
+                    </div>
+                  </Link>
+                </ScrollReveal>
+              );
+            })}
+          </div>
 
           <div className="mt-8 text-center">
             <Link
               to="/galeria"
               className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:scale-105"
             >
-              Ver mais
+              Ver todas as pastas
               <ExternalLink className="h-4 w-4" />
             </Link>
           </div>
