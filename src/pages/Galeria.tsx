@@ -145,7 +145,7 @@ const GaleriaPublica = () => {
   const trackVideoDuration = useCallback(() => {
     if (videoRef.current && lightbox && getFotoTipo(lightbox.url_foto) === "video" && videoStartTime.current > 0) {
       const duration = (Date.now() - videoStartTime.current) / 1000;
-      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video", Math.round(duration));
+      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video");
       videoStartTime.current = 0;
     }
   }, [lightbox]);
@@ -221,7 +221,7 @@ const GaleriaPublica = () => {
   const handleVideoPause = useCallback(() => {
     if (lightbox && videoStartTime.current > 0) {
       const duration = (Date.now() - videoStartTime.current) / 1000;
-      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video", Math.round(duration));
+      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video");
       videoStartTime.current = 0;
     }
   }, [lightbox]);
