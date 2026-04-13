@@ -482,10 +482,26 @@ const Gallery = () => {
           const sanitizedName = fileToUpload.name.replace(/\s+/g, "-").toLowerCase();
           const folder = isVideo ? "videos" : "galeria";
           const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}_${sanitizedName}`;
-          const { error: uploadError } = await cloudSupabase.storage.from("galeria").upload(path, fileToUpload);
+          
+          // Get signed upload URL from edge function (uses service role)
+          let signedUrl: string;
+          try {
+            const urlResult = await galleryAdmin({ action: "create-upload-url", path });
+            signedUrl = urlResult.signedUrl as string;
+          } catch (err) {
+            toast.error(`Erro ao preparar upload: "${file.name}"`);
+            return;
+          }
 
-          if (uploadError) {
-            toast.error(`Erro: "${file.name}" — ${uploadError.message}`);
+          // Upload directly to signed URL
+          const uploadRes = await fetch(signedUrl, {
+            method: "PUT",
+            headers: { "Content-Type": fileToUpload.type || "application/octet-stream" },
+            body: fileToUpload,
+          });
+
+          if (!uploadRes.ok) {
+            toast.error(`Erro: "${file.name}" — falha no upload (${uploadRes.status})`);
             return;
           }
 
