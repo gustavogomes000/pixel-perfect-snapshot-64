@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Download } from "lucide-react";
 import { Image as ImageIcon, Play, X, Loader2, Share2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseDb";
 import { toast } from "sonner";
@@ -403,29 +404,71 @@ const GaleriaPublica = () => {
                     ) : null;
                   })()}
                 </div>
-                <button
-                  onClick={async () => {
-                    const fotoUrl = `${window.location.origin}/galeria?foto=${lightbox.id}`;
-                    const texto = `${lightbox.titulo} — Fernanda Sarelli\n\n📷 Veja a foto: ${fotoUrl}`;
-                    if (navigator.share) {
+                <div className="flex items-center gap-2 shrink-0">
+                  {/* Download */}
+                  <button
+                    onClick={async () => {
                       try {
-                        await navigator.share({
-                          title: lightbox.titulo,
-                          text: texto,
-                          url: fotoUrl,
-                        });
-                      } catch { /* cancelled */ }
-                    } else {
-                      await navigator.clipboard.writeText(texto);
-                      toast.success("Link copiado!");
-                    }
-                  }}
-                  className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                  title="Compartilhar"
-                >
-                  <Share2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Compartilhar</span>
-                </button>
+                        const res = await fetch(lightbox.url_foto);
+                        const blob = await res.blob();
+                        const ext = isVideoUrl(lightbox.url_foto) ? "mp4" : "jpg";
+                        const a = document.createElement("a");
+                        a.href = URL.createObjectURL(blob);
+                        a.download = `${lightbox.titulo.replace(/[^a-zA-Z0-9À-ú ]/g, "").trim() || "foto"}.${ext}`;
+                        a.click();
+                        URL.revokeObjectURL(a.href);
+                        toast.success("Download iniciado!");
+                      } catch {
+                        toast.error("Erro ao baixar.");
+                      }
+                    }}
+                    className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium bg-accent text-accent-foreground hover:bg-accent/80 transition-colors"
+                    title="Baixar"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span className="hidden sm:inline">Baixar</span>
+                  </button>
+                  {/* Share with image */}
+                  <button
+                    onClick={async () => {
+                      const fotoUrl = `${window.location.origin}/galeria?foto=${lightbox.id}`;
+                      const texto = `${lightbox.titulo} — Fernanda Sarelli\n\n📷 Veja mais: ${fotoUrl}`;
+
+                      if (navigator.share) {
+                        try {
+                          const res = await fetch(lightbox.url_foto);
+                          const blob = await res.blob();
+                          const ext = isVideoUrl(lightbox.url_foto) ? "mp4" : "jpg";
+                          const mimeType = isVideoUrl(lightbox.url_foto) ? "video/mp4" : "image/jpeg";
+                          const file = new File([blob], `foto.${ext}`, { type: mimeType });
+
+                          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                            await navigator.share({
+                              title: lightbox.titulo,
+                              text: texto,
+                              url: fotoUrl,
+                              files: [file],
+                            });
+                          } else {
+                            await navigator.share({
+                              title: lightbox.titulo,
+                              text: texto,
+                              url: fotoUrl,
+                            });
+                          }
+                        } catch { /* cancelled */ }
+                      } else {
+                        await navigator.clipboard.writeText(texto);
+                        toast.success("Link copiado!");
+                      }
+                    }}
+                    className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                    title="Compartilhar"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span className="hidden sm:inline">Compartilhar</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
