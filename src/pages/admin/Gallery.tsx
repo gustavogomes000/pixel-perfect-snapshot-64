@@ -1407,8 +1407,6 @@ const Gallery = () => {
                           </button>
                         );
                       })()}
-                        </button>
-                      )}
 
                       <button
                         onClick={() => toggleDestaqueHome(foto.id, !!foto.destaque_home)}
