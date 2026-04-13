@@ -514,8 +514,14 @@ const Gallery = () => {
               const res = await fetch(thumbnailDataUrl);
               const blob = await res.blob();
               const thumbPath = `thumbnails/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-              const { error: thumbErr } = await cloudSupabase.storage.from("galeria").upload(thumbPath, blob, { contentType: "image/jpeg" });
-              if (!thumbErr) {
+              const thumbUrlResult = await galleryAdmin({ action: "create-upload-url", path: thumbPath });
+              const thumbSignedUrl = thumbUrlResult.signedUrl as string;
+              const thumbUploadRes = await fetch(thumbSignedUrl, {
+                method: "PUT",
+                headers: { "Content-Type": "image/jpeg" },
+                body: blob,
+              });
+              if (thumbUploadRes.ok) {
                 const { data: thumbUrl } = cloudSupabase.storage.from("galeria").getPublicUrl(thumbPath);
                 legendaBase = `[tn:${thumbUrl.publicUrl}]`;
               }
