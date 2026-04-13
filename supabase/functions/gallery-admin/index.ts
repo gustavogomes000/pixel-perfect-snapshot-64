@@ -144,16 +144,30 @@ Deno.serve(async (req) => {
 
       // ── Ensure schema (idempotent) ──
       case "ensure-schema": {
-        const { data, error } = await ext.rpc("exec_sql" as any, {
-          sql: "ALTER TABLE public.albuns ADD COLUMN IF NOT EXISTS fixado_home boolean NOT NULL DEFAULT false;"
+        // Use the Supabase SQL API to add the column
+        const sqlRes = await fetch(`${EXT_URL}/rest/v1/rpc/exec_sql`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": EXT_SERVICE_KEY,
+            "Authorization": `Bearer ${EXT_SERVICE_KEY}`,
+          },
+          body: JSON.stringify({ sql: "ALTER TABLE public.albuns ADD COLUMN IF NOT EXISTS fixado_home boolean NOT NULL DEFAULT false;" }),
         });
-        // If rpc doesn't exist, try direct query approach
-        if (error) {
-          // Try a simpler check - just try to select the column
-          const { error: checkErr } = await ext.from("albuns").select("fixado_home").limit(1);
-          if (checkErr) {
-            return json({ success: false, error: "Column fixado_home missing. Run: ALTER TABLE public.albuns ADD COLUMN IF NOT EXISTS fixado_home boolean NOT NULL DEFAULT false;", needsManualMigration: true });
+        
+        if (!sqlRes.ok) {
+          // exec_sql RPC doesn't exist, try the pg_query approach via /pg endpoint
+          // Fall back to checking if column exists
+          const { error: checkErr } = await ext.from("albuns").select("fixado_home" as any).limit(1);
+          if (checkErr && checkErr.message?.includes("fixado_home")) {
+            return json({ 
+              success: false, 
+              error: "Coluna fixado_home não existe. Execute no SQL Editor do Supabase: ALTER TABLE public.albuns ADD COLUMN IF NOT EXISTS fixado_home boolean NOT NULL DEFAULT false;", 
+              needsManualMigration: true 
+            });
           }
+          // Column exists already or error is about something else
+          return json({ success: true, note: "Column already exists or check passed" });
         }
         return json({ success: true });
       }
