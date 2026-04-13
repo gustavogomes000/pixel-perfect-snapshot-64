@@ -9,6 +9,18 @@ const corsHeaders = {
 const EXT_URL = Deno.env.get("EXT_SUPABASE_URL") || Deno.env.get("EXTERNAL_SUPABASE_URL")!;
 const EXT_SERVICE_KEY = Deno.env.get("EXT_SUPABASE_SERVICE_ROLE_KEY") || Deno.env.get("EXTERNAL_SUPABASE_SERVICE_KEY")!;
 
+// Allowed fields for safety (prevent injection of arbitrary columns)
+const ALLOWED_PHOTO_FIELDS = new Set(["titulo", "legenda", "url_foto", "album_id", "visivel", "ordem", "destaque_home"]);
+const ALLOWED_ALBUM_FIELDS = new Set(["nome", "descricao", "capa_url", "ordem", "fixado_home"]);
+
+function sanitizeFields(obj: Record<string, unknown>, allowed: Set<string>): Record<string, unknown> {
+  const result: Record<string, unknown> = {};
+  for (const [key, val] of Object.entries(obj)) {
+    if (allowed.has(key)) result[key] = val;
+  }
+  return result;
+}
+
 function getExtClient() {
   return createClient(EXT_URL, EXT_SERVICE_KEY);
 }
@@ -21,6 +33,10 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
     const { action } = body;
+
+    if (!action || typeof action !== "string") {
+      return json({ success: false, error: "Missing or invalid 'action'" }, 400);
+    }
 
     // Validate service role key for write operations
     const isWriteAction = action !== "debug";
@@ -49,6 +65,7 @@ Deno.serve(async (req) => {
       // ── DELETE photo ──
       case "delete-photo": {
         const { id } = body;
+        if (!id || typeof id !== "string") return json({ success: false, error: "Missing 'id'" }, 400);
         const { data, error } = await ext.from("galeria_fotos").delete().eq("id", id).select();
         if (error) throw error;
         if (!data || data.length === 0) {
@@ -60,6 +77,8 @@ Deno.serve(async (req) => {
       // ── BULK DELETE photos ──
       case "bulk-delete": {
         const { ids } = body;
+        if (!Array.isArray(ids) || ids.length === 0) return json({ success: false, error: "Missing 'ids' array" }, 400);
+        if (ids.length > 100) return json({ success: false, error: "Max 100 items per bulk delete" }, 400);
         const { data, error } = await ext.from("galeria_fotos").delete().in("id", ids).select();
         if (error) throw error;
         return json({ success: true, deleted: data?.length || 0 });
@@ -68,34 +87,46 @@ Deno.serve(async (req) => {
       // ── UPDATE photo ──
       case "update-photo": {
         const { id, updates } = body;
-        const { data, error } = await ext.from("galeria_fotos").update(updates).eq("id", id).select();
+        if (!id || typeof id !== "string") return json({ success: false, error: "Missing 'id'" }, 400);
+        if (!updates || typeof updates !== "object") return json({ success: false, error: "Missing 'updates'" }, 400);
+        const safe = sanitizeFields(updates, ALLOWED_PHOTO_FIELDS);
+        if (Object.keys(safe).length === 0) return json({ success: false, error: "No valid fields to update" }, 400);
+        const { data, error } = await ext.from("galeria_fotos").update(safe).eq("id", id).select();
         if (error) throw error;
         return json({ success: true, data: data?.[0] });
       }
 
-      // ── BULK UPDATE photos ──
+      // ── BULK UPDATE photos (single query instead of N queries) ──
       case "bulk-update": {
         const { ids, updates } = body;
-        const results = [];
-        for (const id of ids) {
-          const { error } = await ext.from("galeria_fotos").update(updates).eq("id", id);
-          if (!error) results.push(id);
-        }
-        return json({ success: true, updated: results.length });
+        if (!Array.isArray(ids) || ids.length === 0) return json({ success: false, error: "Missing 'ids'" }, 400);
+        if (ids.length > 100) return json({ success: false, error: "Max 100 items per bulk update" }, 400);
+        if (!updates || typeof updates !== "object") return json({ success: false, error: "Missing 'updates'" }, 400);
+        const safe = sanitizeFields(updates, ALLOWED_PHOTO_FIELDS);
+        if (Object.keys(safe).length === 0) return json({ success: false, error: "No valid fields" }, 400);
+        const { data, error } = await ext.from("galeria_fotos").update(safe).in("id", ids).select("id");
+        if (error) throw error;
+        return json({ success: true, updated: data?.length || 0 });
       }
 
       // ── INSERT photo ──
       case "insert-photo": {
         const { photo } = body;
-        const { data, error } = await ext.from("galeria_fotos").insert(photo).select();
+        if (!photo || typeof photo !== "object") return json({ success: false, error: "Missing 'photo'" }, 400);
+        const safe = sanitizeFields(photo, ALLOWED_PHOTO_FIELDS);
+        if (!safe.titulo || !safe.url_foto) return json({ success: false, error: "Missing titulo or url_foto" }, 400);
+        const { data, error } = await ext.from("galeria_fotos").insert(safe).select();
         if (error) throw error;
         return json({ success: true, data: data?.[0] });
       }
 
-      // ── INSERT multiple photos ──
+      // ── INSERT multiple photos (batch) ──
       case "insert-photos": {
         const { photos } = body;
-        const { data, error } = await ext.from("galeria_fotos").insert(photos).select();
+        if (!Array.isArray(photos) || photos.length === 0) return json({ success: false, error: "Missing 'photos' array" }, 400);
+        if (photos.length > 50) return json({ success: false, error: "Max 50 photos per batch" }, 400);
+        const safePhotos = photos.map((p: Record<string, unknown>) => sanitizeFields(p, ALLOWED_PHOTO_FIELDS));
+        const { data, error } = await ext.from("galeria_fotos").insert(safePhotos).select();
         if (error) throw error;
         return json({ success: true, data, count: data?.length || 0 });
       }
@@ -103,7 +134,8 @@ Deno.serve(async (req) => {
       // ── MOVE photo to album ──
       case "move-photo": {
         const { id, album_id } = body;
-        const { error } = await ext.from("galeria_fotos").update({ album_id }).eq("id", id);
+        if (!id) return json({ success: false, error: "Missing 'id'" }, 400);
+        const { error } = await ext.from("galeria_fotos").update({ album_id: album_id || null }).eq("id", id);
         if (error) throw error;
         return json({ success: true });
       }
@@ -111,23 +143,26 @@ Deno.serve(async (req) => {
       // ── Album CRUD ──
       case "create-album": {
         const { nome } = body;
-        const { data, error } = await ext.from("albuns").insert({ nome }).select();
+        if (!nome || typeof nome !== "string" || nome.trim().length === 0) return json({ success: false, error: "Missing 'nome'" }, 400);
+        const { data, error } = await ext.from("albuns").insert({ nome: nome.trim() }).select();
         if (error) throw error;
         return json({ success: true, data: data?.[0] });
       }
 
       case "update-album": {
         const { id, ...rest } = body;
-        // Remove action from the updates
-        const { action: _a, ...updates } = rest;
-        const { error } = await ext.from("albuns").update(updates).eq("id", id);
+        if (!id || typeof id !== "string") return json({ success: false, error: "Missing 'id'" }, 400);
+        const { action: _a, ...rawUpdates } = rest;
+        const safe = sanitizeFields(rawUpdates, ALLOWED_ALBUM_FIELDS);
+        if (Object.keys(safe).length === 0) return json({ success: false, error: "No valid fields to update" }, 400);
+        const { error } = await ext.from("albuns").update(safe).eq("id", id);
         if (error) throw error;
         return json({ success: true });
       }
 
       case "delete-album": {
         const { id } = body;
-        // Move photos to no-album first
+        if (!id || typeof id !== "string") return json({ success: false, error: "Missing 'id'" }, 400);
         await ext.from("galeria_fotos").update({ album_id: null }).eq("album_id", id);
         const { error } = await ext.from("albuns").delete().eq("id", id);
         if (error) throw error;
@@ -135,39 +170,12 @@ Deno.serve(async (req) => {
       }
 
       case "reorder-albums": {
-        const { updates } = body; // [{ id, ordem }]
+        const { updates } = body;
+        if (!Array.isArray(updates)) return json({ success: false, error: "Missing 'updates' array" }, 400);
         for (const u of updates) {
-          await ext.from("albuns").update({ ordem: u.ordem }).eq("id", u.id);
-        }
-        return json({ success: true });
-      }
-
-      // ── Ensure schema (idempotent) ──
-      case "ensure-schema": {
-        // Use the Supabase SQL API to add the column
-        const sqlRes = await fetch(`${EXT_URL}/rest/v1/rpc/exec_sql`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "apikey": EXT_SERVICE_KEY,
-            "Authorization": `Bearer ${EXT_SERVICE_KEY}`,
-          },
-          body: JSON.stringify({ sql: "ALTER TABLE public.albuns ADD COLUMN IF NOT EXISTS fixado_home boolean NOT NULL DEFAULT false;" }),
-        });
-        
-        if (!sqlRes.ok) {
-          // exec_sql RPC doesn't exist, try the pg_query approach via /pg endpoint
-          // Fall back to checking if column exists
-          const { error: checkErr } = await ext.from("albuns").select("fixado_home" as any).limit(1);
-          if (checkErr && checkErr.message?.includes("fixado_home")) {
-            return json({ 
-              success: false, 
-              error: "Coluna fixado_home não existe. Execute no SQL Editor do Supabase: ALTER TABLE public.albuns ADD COLUMN IF NOT EXISTS fixado_home boolean NOT NULL DEFAULT false;", 
-              needsManualMigration: true 
-            });
+          if (u.id && typeof u.ordem === "number") {
+            await ext.from("albuns").update({ ordem: u.ordem }).eq("id", u.id);
           }
-          // Column exists already or error is about something else
-          return json({ success: true, note: "Column already exists or check passed" });
         }
         return json({ success: true });
       }
@@ -175,6 +183,10 @@ Deno.serve(async (req) => {
       // ── Config ──
       case "update-config": {
         const { chave, valor } = body;
+        if (!chave || typeof chave !== "string") return json({ success: false, error: "Missing 'chave'" }, 400);
+        // Only allow specific config keys
+        const allowedKeys = new Set(["galeria_ativa"]);
+        if (!allowedKeys.has(chave)) return json({ success: false, error: "Config key not allowed" }, 403);
         const { error } = await ext.from("configuracoes").update({ valor }).eq("chave", chave);
         if (error) throw error;
         return json({ success: true });
@@ -183,6 +195,11 @@ Deno.serve(async (req) => {
       // ── Create signed upload URL ──
       case "create-upload-url": {
         const { path: filePath } = body;
+        if (!filePath || typeof filePath !== "string") return json({ success: false, error: "Missing 'path'" }, 400);
+        // Validate path to prevent directory traversal
+        if (filePath.includes("..") || filePath.startsWith("/")) {
+          return json({ success: false, error: "Invalid path" }, 400);
+        }
         const CLOUD_URL = Deno.env.get("SUPABASE_URL")!;
         const CLOUD_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
         const cloudClient = createClient(CLOUD_URL, CLOUD_SERVICE_KEY);
@@ -191,9 +208,33 @@ Deno.serve(async (req) => {
         return json({ success: true, signedUrl: data.signedUrl, token: data.token, path: data.path });
       }
 
+      // ── Batch create signed upload URLs (reduce round-trips) ──
+      case "create-upload-urls": {
+        const { paths } = body;
+        if (!Array.isArray(paths) || paths.length === 0) return json({ success: false, error: "Missing 'paths' array" }, 400);
+        if (paths.length > 50) return json({ success: false, error: "Max 50 paths" }, 400);
+        for (const p of paths) {
+          if (typeof p !== "string" || p.includes("..") || p.startsWith("/")) {
+            return json({ success: false, error: `Invalid path: ${p}` }, 400);
+          }
+        }
+        const CLOUD_URL = Deno.env.get("SUPABASE_URL")!;
+        const CLOUD_SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const cloudClient = createClient(CLOUD_URL, CLOUD_SERVICE_KEY);
+        const results = await Promise.all(
+          paths.map(async (p: string) => {
+            const { data, error } = await cloudClient.storage.from("galeria").createSignedUploadUrl(p);
+            if (error) return { path: p, error: error.message };
+            return { path: p, signedUrl: data.signedUrl, token: data.token };
+          })
+        );
+        return json({ success: true, urls: results });
+      }
+
       // ── Test data ──
       case "delete-test-photos": {
         const { urls } = body;
+        if (!Array.isArray(urls)) return json({ success: false, error: "Missing 'urls'" }, 400);
         const { data, error } = await ext.from("galeria_fotos").delete().in("url_foto", urls).select();
         if (error) throw error;
         return json({ success: true, deleted: data?.length || 0 });

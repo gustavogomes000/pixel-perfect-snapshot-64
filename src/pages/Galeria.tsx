@@ -52,16 +52,19 @@ const getDeviceInfo = () => {
 const trackGalleryEvent = async (
   fotoId: string,
   tipoEvento: "visualizacao" | "play_video" | "duracao_video",
-  valor?: number
 ) => {
-  const { dispositivo, navegador } = getDeviceInfo();
-  await supabase.from("galeria_analytics" as any).insert({
-    foto_id: fotoId,
-    tipo_evento: tipoEvento,
-    cookie_visitante: getVisitorCookie(),
-    dispositivo,
-    navegador,
-  } as any);
+  try {
+    const { dispositivo, navegador } = getDeviceInfo();
+    await supabase.from("galeria_analytics" as any).insert({
+      foto_id: fotoId,
+      tipo_evento: tipoEvento,
+      cookie_visitante: getVisitorCookie(),
+      dispositivo,
+      navegador,
+    } as any);
+  } catch {
+    // silently fail - analytics should never break UX
+  }
 };
 
 const SkeletonCard = () => (
