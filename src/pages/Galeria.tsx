@@ -144,6 +144,16 @@ const GaleriaPublica = () => {
     }
   }, [fotos, searchParams, openLightbox]);
 
+  // Auto-select album from ?album= query param
+  useEffect(() => {
+    if (albuns.length === 0) return;
+    const albumParam = searchParams.get("album");
+    if (albumParam && !selectedAlbum) {
+      const found = albuns.find(a => a.id === albumParam);
+      if (found) setSelectedAlbum(found.id);
+    }
+  }, [albuns, searchParams, selectedAlbum]);
+
 
   const closeLightbox = useCallback(() => {
     trackVideoDuration();

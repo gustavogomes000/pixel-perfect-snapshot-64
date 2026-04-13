@@ -117,8 +117,10 @@ Deno.serve(async (req) => {
       }
 
       case "update-album": {
-        const { id, nome } = body;
-        const { error } = await ext.from("albuns").update({ nome }).eq("id", id);
+        const { id, ...rest } = body;
+        // Remove action from the updates
+        const { action: _a, ...updates } = rest;
+        const { error } = await ext.from("albuns").update(updates).eq("id", id);
         if (error) throw error;
         return json({ success: true });
       }
@@ -136,6 +138,36 @@ Deno.serve(async (req) => {
         const { updates } = body; // [{ id, ordem }]
         for (const u of updates) {
           await ext.from("albuns").update({ ordem: u.ordem }).eq("id", u.id);
+        }
+        return json({ success: true });
+      }
+
+      // ── Ensure schema (idempotent) ──
+      case "ensure-schema": {
+        // Use the Supabase SQL API to add the column
+        const sqlRes = await fetch(`${EXT_URL}/rest/v1/rpc/exec_sql`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": EXT_SERVICE_KEY,
+            "Authorization": `Bearer ${EXT_SERVICE_KEY}`,
+          },
+          body: JSON.stringify({ sql: "ALTER TABLE public.albuns ADD COLUMN IF NOT EXISTS fixado_home boolean NOT NULL DEFAULT false;" }),
+        });
+        
+        if (!sqlRes.ok) {
+          // exec_sql RPC doesn't exist, try the pg_query approach via /pg endpoint
+          // Fall back to checking if column exists
+          const { error: checkErr } = await ext.from("albuns").select("fixado_home" as any).limit(1);
+          if (checkErr && checkErr.message?.includes("fixado_home")) {
+            return json({ 
+              success: false, 
+              error: "Coluna fixado_home não existe. Execute no SQL Editor do Supabase: ALTER TABLE public.albuns ADD COLUMN IF NOT EXISTS fixado_home boolean NOT NULL DEFAULT false;", 
+              needsManualMigration: true 
+            });
+          }
+          // Column exists already or error is about something else
+          return json({ success: true, note: "Column already exists or check passed" });
         }
         return json({ success: true });
       }

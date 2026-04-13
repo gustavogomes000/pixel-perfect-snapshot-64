@@ -26,7 +26,10 @@ interface Album {
   id: string;
   nome: string;
   descricao: string | null;
+  capa_url: string | null;
   ordem: number | null;
+  fixado_home: boolean;
+  atualizado_em: string;
 }
 
 interface Foto {
@@ -271,6 +274,28 @@ const Gallery = () => {
       await loadData();
     } catch (error) {
       handleActionError(error, "Não foi possível renomear.");
+    }
+  };
+
+  const toggleAlbumPin = async (albumId: string, currentPinned: boolean) => {
+    if (!ensureWriteEnabled()) return;
+    try {
+      await galleryAdmin({ action: "update-album", id: albumId, fixado_home: !currentPinned });
+      toast.success(!currentPinned ? "📌 Pasta fixada na home" : "Pasta removida da home");
+      await loadData();
+    } catch (error) {
+      handleActionError(error, "Erro ao fixar/desfixar pasta.");
+    }
+  };
+
+  const setAlbumCover = async (albumId: string, coverUrl: string) => {
+    if (!ensureWriteEnabled()) return;
+    try {
+      await galleryAdmin({ action: "update-album", id: albumId, capa_url: coverUrl });
+      toast.success("Capa da pasta atualizada!");
+      await loadData();
+    } catch (error) {
+      handleActionError(error, "Erro ao definir capa.");
     }
   };
 
@@ -873,6 +898,7 @@ const Gallery = () => {
                         : "bg-card border-border hover:bg-accent hover:border-primary/30"
                     }`}
                   >
+                    {album.fixado_home && <Pin className="h-3 w-3" />}
                     📁 {album.nome}
                     <span className={`text-xs rounded-full px-1.5 py-0.5 ${isSelected ? "bg-primary-foreground/20" : "bg-muted"}`}>
                       {count}
@@ -891,6 +917,15 @@ const Gallery = () => {
                           <ArrowRight className="h-3.5 w-3.5" />
                         </button>
                       )}
+                      <button
+                        onClick={() => toggleAlbumPin(album.id, !!album.fixado_home)}
+                        className={`h-7 w-7 flex items-center justify-center rounded-lg border transition-colors ${
+                          album.fixado_home ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                        }`}
+                        title={album.fixado_home ? "Remover da home" : "Fixar na home"}
+                      >
+                        <Pin className="h-3.5 w-3.5" />
+                      </button>
                       <button
                         onClick={() => { setEditAlbumId(album.id); setEditAlbumName(album.nome); setEditAlbumOpen(true); }}
                         className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent border"
@@ -1327,6 +1362,20 @@ const Gallery = () => {
                       >
                         {foto.visivel ? <Eye className="h-3 w-3 text-primary" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
                       </button>
+
+                      {foto.album_id && !getFotoTipo(foto.url_foto).includes("video") && (
+                        <button
+                          onClick={() => setAlbumCover(foto.album_id!, foto.url_foto)}
+                          className={`flex h-7 items-center gap-1 px-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+                            albuns.find(a => a.id === foto.album_id)?.capa_url === foto.url_foto
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-accent hover:bg-accent/80"
+                          }`}
+                          title="Definir como capa da pasta"
+                        >
+                          <Camera className="h-3 w-3" />
+                        </button>
+                      )}
 
                       <button
                         onClick={() => toggleDestaqueHome(foto.id, !!foto.destaque_home)}

@@ -1,10 +1,9 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { decodeFocalPoint, decodeThumbnail } from "@/components/admin/FocalPointPicker";
 import { Link } from "react-router-dom";
-import { Calendar, Clock, MapPin, ExternalLink, Shield, Heart, Users, Scale, MessageCircle, Facebook, Instagram, User, Mail, MapPinIcon, Loader2, Play, X, Share2 } from "lucide-react";
+import { Calendar, Clock, MapPin, ExternalLink, Shield, Heart, Users, Scale, MessageCircle, Facebook, Instagram, User, Mail, MapPinIcon, Loader2 } from "lucide-react";
 import { useGoogleCalendar } from "@/hooks/useGoogleCalendar";
-import { toast } from "sonner";
+
 import { supabase } from "@/lib/supabaseDb";
 import { getGaleriaAtiva } from "@/hooks/useGaleriaConfig";
 import Layout from "@/components/Layout";
@@ -38,88 +37,66 @@ const bandeiras = [
   },
 ];
 
-const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".avi"];
-const isVideoUrl = (url: string) => VIDEO_EXTENSIONS.some(ext => url.toLowerCase().includes(ext));
-const getItemTipo = (url: string) => isVideoUrl(url) ? "video" : "foto";
 const redes = [
   { icon: MessageCircle, label: "WhatsApp", handle: "(62) 99323-7397", url: "https://wa.me/5562993237397?text=Ol%C3%A1%20Dra.%20Fernanda%20Sarelli" },
   { icon: Facebook, label: "Facebook", handle: "@drafernandaSarelli", url: "https://www.facebook.com/people/Dra-Fernanda-Sarelli/61554974150545/" },
   { icon: Instagram, label: "Instagram", handle: "@drafernandasarelli", url: "https://www.instagram.com/drafernandasarelli/" },
 ];
 
-interface HomeGalleryItem {
+interface HomeAlbum {
   id: string;
-  titulo: string;
-  legenda: string | null;
-  url_foto: string;
-  tipo: string;
-  ordem: number;
-  evento: string | null;
+  nome: string;
+  capa_url: string | null;
+  fixado_home: boolean;
+  atualizado_em: string;
+  foto_count: number;
+  first_photo_url: string | null;
 }
 
 const Index = () => {
-  const [galeriaItems, setGaleriaItems] = useState<HomeGalleryItem[]>([]);
+  const [homeAlbuns, setHomeAlbuns] = useState<HomeAlbum[]>([]);
   const [galeriaAtiva, setGaleriaAtiva] = useState(false);
-  const [galeriaFiltro, setGaleriaFiltro] = useState<"todos" | "foto" | "video" | "eventos">("todos");
-  const [lightbox, setLightbox] = useState<HomeGalleryItem | null>(null);
-  const [imgLoaded, setImgLoaded] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const { events: proximosEventos, loading: eventosLoading, error: eventosError } = useGoogleCalendar({ filter: "proximos", limit: 3 });
   const eventos = Array.isArray(proximosEventos) ? proximosEventos : [];
 
-  const openLightbox = useCallback((item: HomeGalleryItem) => {
-    setImgLoaded(false);
-    setLightbox(item);
-  }, []);
-
-  const closeLightbox = useCallback(() => {
-    if (videoRef.current) { videoRef.current.pause(); videoRef.current.src = ""; }
-    setLightbox(null);
-    setImgLoaded(false);
-  }, []);
-
-  useEffect(() => {
-    if (!lightbox) return;
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeLightbox(); };
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, [lightbox, closeLightbox]);
-
-  useEffect(() => {
-    if (lightbox) document.body.style.overflow = "hidden";
-    else document.body.style.overflow = "";
-    return () => { document.body.style.overflow = ""; };
-  }, [lightbox]);
-
   useEffect(() => {
     const loadGaleria = async () => {
-      // Fetch config + both query variants in parallel
-      const [ativa, destaquesResult, fallbackResult] = await Promise.all([
+      const [ativa, albumsResult, fotosResult] = await Promise.all([
         getGaleriaAtiva(),
-        (supabase.from("galeria_fotos").select("*") as any)
-          .eq("visivel", true)
-          .eq("destaque_home", true)
-          .order("ordem")
-          .limit(12),
-        supabase.from("galeria_fotos").select("*").eq("visivel", true).order("ordem").limit(12),
+        supabase.from("albuns" as any).select("*").order("ordem"),
+        supabase.from("galeria_fotos").select("id, url_foto, album_id").eq("visivel", true),
       ]);
 
       setGaleriaAtiva(ativa);
       if (!ativa) return;
 
-      const raw = destaquesResult.data?.length > 0 ? destaquesResult.data : fallbackResult.data;
-      if (raw) {
-        setGaleriaItems((raw as any[]).map(d => ({
-          id: d.id,
-          titulo: d.titulo,
-          legenda: d.legenda,
-          url_foto: d.url_foto,
-          tipo: getItemTipo(d.url_foto),
-          ordem: d.ordem ?? 0,
-          evento: d.evento || null,
-        })));
-      }
+      const allAlbums = (albumsResult.data as any[] || []);
+      const allFotos = (fotosResult.data as any[] || []);
+
+      // Build album list with photo counts and first photo
+      const albumsWithData: HomeAlbum[] = allAlbums.map((a: any) => {
+        const albumFotos = allFotos.filter((f: any) => f.album_id === a.id);
+        return {
+          id: a.id,
+          nome: a.nome,
+          capa_url: a.capa_url || null,
+          fixado_home: !!a.fixado_home,
+          atualizado_em: a.atualizado_em,
+          foto_count: albumFotos.length,
+          first_photo_url: albumFotos[0]?.url_foto || null,
+        };
+      });
+
+      // Sort: pinned first, then by atualizado_em desc
+      albumsWithData.sort((a, b) => {
+        if (a.fixado_home && !b.fixado_home) return -1;
+        if (!a.fixado_home && b.fixado_home) return 1;
+        return new Date(b.atualizado_em).getTime() - new Date(a.atualizado_em).getTime();
+      });
+
+      // Show up to 6
+      setHomeAlbuns(albumsWithData.slice(0, 6));
     };
 
     loadGaleria();
@@ -366,7 +343,7 @@ const Index = () => {
         </div>
       </section>
 
-      {galeriaAtiva && (
+      {galeriaAtiva && homeAlbuns.length > 0 && (
       <section className="py-16 md:py-20">
         <div className="container">
           <ScrollReveal>
@@ -379,105 +356,52 @@ const Index = () => {
             </div>
           </ScrollReveal>
 
-          {/* Filter tabs */}
-          {galeriaItems.length > 0 && (
-            <ScrollReveal delay={0.05}>
-              <div className="flex justify-start sm:justify-center gap-2 mt-8 overflow-x-auto pb-2 px-1 -mx-1 scrollbar-hide">
-                {(["todos", "foto", "video", "eventos"] as const).map((filtro) => {
-                  const labels = { todos: "Todos", foto: "📷 Fotos", video: "🎬 Vídeos", eventos: "📅 Eventos" };
-                  const getCount = (f: typeof filtro) => {
-                    if (f === "todos") return galeriaItems.length;
-                    if (f === "eventos") return galeriaItems.filter(i => !!i.evento).length;
-                    return galeriaItems.filter(i => (i.tipo || "foto") === f).length;
-                  };
-                  const count = getCount(filtro);
-                  if (filtro !== "todos" && count === 0) return null;
-                  return (
-                    <button
-                      key={filtro}
-                      onClick={() => setGaleriaFiltro(filtro)}
-                      className={`rounded-full px-4 py-2 text-xs sm:text-sm font-medium border transition-colors whitespace-nowrap flex-shrink-0 ${
-                        galeriaFiltro === filtro
-                          ? "bg-primary text-primary-foreground border-primary"
-                          : "bg-card border-border hover:bg-accent"
-                      }`}
-                    >
-                      {labels[filtro]} ({count})
-                    </button>
-                  );
-                })}
-              </div>
-            </ScrollReveal>
-          )}
-
-          {(() => {
-            const filtered = galeriaFiltro === "todos"
-              ? galeriaItems
-              : galeriaFiltro === "eventos"
-              ? galeriaItems.filter(i => !!i.evento)
-              : galeriaItems.filter(i => (i.tipo || "foto") === galeriaFiltro);
-            const display = filtered.slice(0, 9);
-
-            return display.length > 0 ? (
-              <div className="mt-6 sm:mt-10 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-3 md:gap-4">
-                {display.map((item, i) => {
-                  const isVideo = (item.tipo || "foto") === "video";
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => openLightbox(item)}
-                      className="group text-left block overflow-hidden rounded-xl sm:rounded-2xl border bg-card transition-shadow hover:shadow-lg active:scale-[0.98] w-full"
-                    >
-                      <div className="aspect-square overflow-hidden relative bg-muted flex items-center justify-center">
-                        {isVideo ? (
-                          <>
-                            <video
-                              src={item.url_foto}
-                              className="h-full w-full object-contain"
-                              muted
-                              preload={decodeThumbnail(item.legenda) ? "none" : "metadata"}
-                              playsInline
-                              poster={decodeThumbnail(item.legenda) || undefined}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_0_4px_rgba(255,255,255,0.35)] group-hover:scale-110 group-hover:shadow-[0_0_0_6px_rgba(255,255,255,0.45)] transition-all duration-200">
-                                <Play className="h-5 w-5 sm:h-6 sm:w-6 text-white ml-0.5" fill="white" />
-                              </div>
-                            </div>
-                          </>
-                        ) : (
-                          <img
-                            src={item.url_foto}
-                            alt={item.legenda ? decodeFocalPoint(item.legenda).cleanLegenda || item.titulo : item.titulo}
-                            className="h-full w-full object-contain"
-                            loading={i < 4 ? "eager" : "lazy"}
-                            decoding="async"
-                          />
-                        )}
+          <div className="mt-8 sm:mt-10 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 md:gap-5">
+            {homeAlbuns.map((album, i) => {
+              const coverUrl = album.capa_url || album.first_photo_url;
+              return (
+                <ScrollReveal key={album.id} delay={i * 0.05}>
+                  <Link
+                    to={`/galeria?album=${album.id}`}
+                    className="group block overflow-hidden rounded-xl sm:rounded-2xl border bg-card transition-shadow hover:shadow-lg active:scale-[0.98]"
+                  >
+                    <div className="aspect-square overflow-hidden relative bg-muted flex items-center justify-center">
+                      {coverUrl ? (
+                        <img
+                          src={coverUrl}
+                          alt={album.nome}
+                          className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          loading={i < 4 ? "eager" : "lazy"}
+                          decoding="async"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                          <Calendar className="h-10 w-10" />
+                          <span className="text-xs">Sem capa</span>
+                        </div>
+                      )}
+                      {album.fixado_home && (
+                        <div className="absolute top-2 left-2 bg-primary text-primary-foreground text-[10px] px-2 py-0.5 rounded-full font-medium">
+                          📌 Fixado
+                        </div>
+                      )}
+                      <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-3 pt-8">
+                        <p className="text-white text-sm sm:text-base font-semibold truncate">{album.nome}</p>
+                        <p className="text-white/70 text-xs">{album.foto_count} foto(s)</p>
                       </div>
-                      <div className="p-2 sm:p-3">
-                        <p className="text-xs sm:text-sm font-medium truncate">{item.titulo}</p>
-                        {item.evento && (
-                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5">{item.evento}</p>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : (
-              <div className="mt-10 text-center py-10">
-                <p className="text-muted-foreground">Em breve novos conteúdos serão publicados aqui.</p>
-              </div>
-            );
-          })()}
+                    </div>
+                  </Link>
+                </ScrollReveal>
+              );
+            })}
+          </div>
 
           <div className="mt-8 text-center">
             <Link
               to="/galeria"
               className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:scale-105"
             >
-              Ver mais
+              Ver todas as pastas
               <ExternalLink className="h-4 w-4" />
             </Link>
           </div>
@@ -569,91 +493,6 @@ const Index = () => {
           </ScrollReveal>
         </div>
       </section>
-      {/* Lightbox para galeria fixada na home */}
-      {lightbox && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 sm:p-6"
-          onClick={closeLightbox}
-        >
-          <button
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-            aria-label="Fechar"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          <div
-            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-xl overflow-hidden bg-card shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {(lightbox.tipo || "foto") === "video" ? (
-              <video
-                ref={videoRef}
-                src={lightbox.url_foto}
-                className="w-full max-h-[78vh] bg-black"
-                controls
-                autoPlay
-                muted={false}
-                playsInline
-                controlsList="nodownload"
-              />
-            ) : (
-              <div className="relative w-full max-h-[78vh] flex items-center justify-center bg-black min-h-[200px]">
-                {!imgLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-white/60" />
-                  </div>
-                )}
-                <img
-                  src={lightbox.url_foto}
-                  alt={lightbox.titulo}
-                  className="max-w-full max-h-[78vh] object-contain"
-                  style={{ display: imgLoaded ? "block" : "none" }}
-                  onLoad={() => setImgLoaded(true)}
-                />
-              </div>
-            )}
-            <div className="p-4 shrink-0">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="font-semibold">{lightbox.titulo}</p>
-                  {lightbox.evento && (
-                    <p className="text-sm text-muted-foreground mt-0.5">{lightbox.evento}</p>
-                  )}
-                  {lightbox.legenda && (() => {
-                    const { cleanLegenda } = decodeFocalPoint(lightbox.legenda);
-                    return cleanLegenda ? <p className="text-sm text-muted-foreground mt-1">{cleanLegenda}</p> : null;
-                  })()}
-                </div>
-                <button
-                  onClick={async () => {
-                    const fotoUrl = `${window.location.origin}/galeria?foto=${lightbox.id}`;
-                    const texto = `${lightbox.titulo} — Fernanda Sarelli\n\n📷 Veja a foto: ${fotoUrl}`;
-                    if (navigator.share) {
-                      try {
-                        await navigator.share({
-                          title: lightbox.titulo,
-                          text: texto,
-                          url: fotoUrl,
-                        });
-                      } catch { /* cancelled */ }
-                    } else {
-                      await navigator.clipboard.writeText(texto);
-                      toast.success("Link copiado!");
-                    }
-                  }}
-                  className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                  title="Compartilhar"
-                >
-                  <Share2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Compartilhar</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </Layout>
   );
 };
