@@ -307,14 +307,14 @@ const GaleriaPublica = () => {
           {/* Album filter with counts */}
           {albuns.length > 0 && (
             <div className="mb-10">
-              <div className="flex gap-2 overflow-x-auto pb-2 px-4 -mx-4 scrollbar-none sm:justify-center sm:flex-wrap">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap sm:justify-center gap-2 px-2">
                 <button
                   onClick={() => setSelectedAlbum(null)}
-                  className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-medium border transition-colors min-w-[120px] text-center ${
+                  className={`rounded-full px-4 py-2.5 text-sm font-medium border transition-colors text-center whitespace-nowrap ${
                     !selectedAlbum ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
                   }`}
                 >
-                  Todas <span className="text-xs opacity-70">({fotos.length})</span>
+                  Todas ({fotos.length})
                 </button>
                 {albuns.map((album) => {
                   const isActive = selectedAlbum === album.id;
@@ -322,11 +322,11 @@ const GaleriaPublica = () => {
                     <button
                       key={album.id}
                       onClick={() => setSelectedAlbum(album.id)}
-                      className={`shrink-0 rounded-full px-5 py-2.5 text-sm font-medium border transition-colors min-w-[120px] text-center ${
+                      className={`rounded-full px-4 py-2.5 text-sm font-medium border transition-colors text-center truncate ${
                         isActive ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
                       }`}
                     >
-                      {album.nome} <span className="text-xs opacity-70">({albumPhotoCounts.get(album.id) || 0})</span>
+                      {album.nome} ({albumPhotoCounts.get(album.id) || 0})
                     </button>
                   );
                 })}
