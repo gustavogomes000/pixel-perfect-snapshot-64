@@ -1,8 +1,7 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { decodeFocalPoint, decodeThumbnail } from "@/components/admin/FocalPointPicker";
 import { Link } from "react-router-dom";
-import { Calendar, Clock, MapPin, ExternalLink, Shield, Heart, Users, Scale, MessageCircle, Facebook, Instagram, User, Mail, MapPinIcon, Loader2, Play, X, Share2 } from "lucide-react";
+import { Calendar, Clock, MapPin, ExternalLink, Shield, Heart, Users, Scale, MessageCircle, Facebook, Instagram, User, Mail, MapPinIcon } from "lucide-react";
 import { useGoogleCalendar } from "@/hooks/useGoogleCalendar";
 import { toast } from "sonner";
 import { supabase } from "@/lib/supabaseDb";
