@@ -290,6 +290,7 @@ const Gallery = () => {
 
   const setAlbumCover = async (albumId: string, coverUrl: string) => {
     if (!ensureWriteEnabled()) return;
+    if (!window.confirm("Definir esta foto como capa da pasta?")) return;
     try {
       await galleryAdmin({ action: "update-album", id: albumId, capa_url: coverUrl });
       toast.success("Capa da pasta atualizada!");
@@ -432,6 +433,10 @@ const Gallery = () => {
     const mediaFiles = files.filter(f => f.type.startsWith("image/") || f.type.startsWith("video/"));
     if (mediaFiles.length === 0) {
       toast.error("Nenhum arquivo válido. Selecione fotos ou vídeos.");
+      return;
+    }
+    if (mediaFiles.length > 50) {
+      toast.error(`Máximo de 50 arquivos por vez. Você selecionou ${mediaFiles.length}.`);
       return;
     }
 
@@ -770,7 +775,7 @@ const Gallery = () => {
                 Toque para enviar fotos ou vídeos
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                JPG, PNG, MP4, WebM
+                JPG, PNG, MP4, WebM · Máx. 50 arquivos por vez
               </p>
               {selectedAlbumName && (
                 <Badge variant="secondary" className="mt-3">
@@ -1385,19 +1390,23 @@ const Gallery = () => {
                         {foto.visivel ? <Eye className="h-3 w-3 text-primary" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
                       </button>
 
-                      {foto.album_id && !getFotoTipo(foto.url_foto).includes("video") && (
-                        <button
-                          onClick={() => setAlbumCover(foto.album_id!, foto.url_foto)}
-                          className={`flex h-7 items-center gap-1 px-1.5 rounded-lg text-[10px] font-medium transition-colors ${
-                            albuns.find(a => a.id === foto.album_id)?.capa_url === foto.url_foto
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-accent hover:bg-accent/80"
-                          }`}
-                          title="Definir como capa da pasta"
-                        >
-                          <Camera className="h-3 w-3" />
-                        </button>
-                      )}
+                      {foto.album_id && !getFotoTipo(foto.url_foto).includes("video") && (() => {
+                        const isCover = albuns.find(a => a.id === foto.album_id)?.capa_url === foto.url_foto;
+                        return (
+                          <button
+                            onClick={() => setAlbumCover(foto.album_id!, foto.url_foto)}
+                            className={`flex h-7 items-center gap-1 px-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+                              isCover
+                                ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
+                                : "bg-accent hover:bg-accent/80"
+                            }`}
+                            title={isCover ? "✅ Capa atual da pasta" : "Definir como capa da pasta"}
+                          >
+                            <Camera className="h-3 w-3" />
+                            {isCover && <span>Capa</span>}
+                          </button>
+                        );
+                      })()}
 
                       <button
                         onClick={() => toggleDestaqueHome(foto.id, !!foto.destaque_home)}
