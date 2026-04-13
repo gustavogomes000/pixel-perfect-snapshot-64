@@ -26,7 +26,10 @@ interface Album {
   id: string;
   nome: string;
   descricao: string | null;
+  capa_url: string | null;
   ordem: number | null;
+  fixado_home: boolean;
+  atualizado_em: string;
 }
 
 interface Foto {
