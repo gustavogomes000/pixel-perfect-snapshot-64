@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
+import { Download } from "lucide-react";
 import { Image as ImageIcon, Play, X, Loader2, Share2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseDb";
 import { toast } from "sonner";
