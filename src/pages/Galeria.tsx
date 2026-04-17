@@ -1,10 +1,11 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
+import { Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { Image as ImageIcon, Play, X, Loader2, Share2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseDb";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
-import ParallaxRevealCard from "@/components/ParallaxRevealCard";
 import { decodeFocalPoint, getFocalStyle, decodeThumbnail } from "@/components/admin/FocalPointPicker";
 
 interface Album {
@@ -23,6 +24,8 @@ interface Foto {
 const VIDEO_EXTENSIONS = [".mp4", ".webm", ".mov", ".avi", ".MOV", ".MP4"];
 const isVideoUrl = (url: string) => VIDEO_EXTENSIONS.some(ext => url.toLowerCase().includes(ext.toLowerCase()));
 const getFotoTipo = (url: string) => isVideoUrl(url) ? "video" : "foto";
+
+const PHOTOS_PER_PAGE = 20;
 
 const getVisitorCookie = (): string => {
   const key = "chama_visitor";
@@ -50,20 +53,21 @@ const getDeviceInfo = () => {
 const trackGalleryEvent = async (
   fotoId: string,
   tipoEvento: "visualizacao" | "play_video" | "duracao_video",
-  valor?: number
 ) => {
-  const { dispositivo, navegador } = getDeviceInfo();
-  await supabase.from("galeria_analytics" as any).insert({
-    foto_id: fotoId,
-    tipo_evento: tipoEvento,
-    valor: valor ?? null,
-    cookie_visitante: getVisitorCookie(),
-    dispositivo,
-    navegador,
-  } as any);
+  try {
+    const { dispositivo, navegador } = getDeviceInfo();
+    await supabase.from("galeria_analytics" as any).insert({
+      foto_id: fotoId,
+      tipo_evento: tipoEvento,
+      cookie_visitante: getVisitorCookie(),
+      dispositivo,
+      navegador,
+    } as any);
+  } catch {
+    // silently fail - analytics should never break UX
+  }
 };
 
-// Skeleton card for loading state
 const SkeletonCard = () => (
   <div className="rounded-2xl overflow-hidden border bg-card animate-pulse">
     <div className="w-full aspect-[3/4] bg-muted" />
@@ -82,10 +86,12 @@ const GaleriaPublica = () => {
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<Foto | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(PHOTOS_PER_PAGE);
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoStartTime = useRef<number>(0);
   const trackedPlayRef = useRef<string | null>(null);
   const autoOpenedRef = useRef(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -116,13 +122,38 @@ const GaleriaPublica = () => {
     load();
   }, []);
 
+  // Reset visible count when album changes
+  useEffect(() => {
+    setVisibleCount(PHOTOS_PER_PAGE);
+  }, [selectedAlbum]);
+
+  // Infinite scroll observer
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setVisibleCount(prev => prev + PHOTOS_PER_PAGE);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [fotos, selectedAlbum]);
+
   const trackVideoDuration = useCallback(() => {
     if (videoRef.current && lightbox && getFotoTipo(lightbox.url_foto) === "video" && videoStartTime.current > 0) {
       const duration = (Date.now() - videoStartTime.current) / 1000;
-      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video", Math.round(duration));
+      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video");
       videoStartTime.current = 0;
     }
   }, [lightbox]);
+
+  const filteredFotos = selectedAlbum
+    ? fotos.filter((f) => f.album_id === selectedAlbum)
+    : fotos;
 
   const openLightbox = useCallback((foto: Foto) => {
     setImgLoaded(false);
@@ -131,6 +162,21 @@ const GaleriaPublica = () => {
     trackedPlayRef.current = null;
     videoStartTime.current = 0;
   }, []);
+
+  const navigateLightbox = useCallback((direction: -1 | 1) => {
+    if (!lightbox) return;
+    const idx = filteredFotos.findIndex(f => f.id === lightbox.id);
+    if (idx < 0) return;
+    const newIdx = idx + direction;
+    if (newIdx >= 0 && newIdx < filteredFotos.length) {
+      setImgLoaded(false);
+      const next = filteredFotos[newIdx];
+      setLightbox(next);
+      trackGalleryEvent(next.id, "visualizacao");
+      trackedPlayRef.current = null;
+      videoStartTime.current = 0;
+    }
+  }, [lightbox, filteredFotos]);
 
   // Auto-open photo from ?foto= query param
   useEffect(() => {
@@ -145,6 +191,15 @@ const GaleriaPublica = () => {
     }
   }, [fotos, searchParams, openLightbox]);
 
+  // Auto-select album from ?album= query param
+  useEffect(() => {
+    if (albuns.length === 0) return;
+    const albumParam = searchParams.get("album");
+    if (albumParam && !selectedAlbum) {
+      const found = albuns.find(a => a.id === albumParam);
+      if (found) setSelectedAlbum(found.id);
+    }
+  }, [albuns, searchParams, selectedAlbum]);
 
   const closeLightbox = useCallback(() => {
     trackVideoDuration();
@@ -167,17 +222,21 @@ const GaleriaPublica = () => {
   const handleVideoPause = useCallback(() => {
     if (lightbox && videoStartTime.current > 0) {
       const duration = (Date.now() - videoStartTime.current) / 1000;
-      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video", Math.round(duration));
+      if (duration >= 1) trackGalleryEvent(lightbox.id, "duracao_video");
       videoStartTime.current = 0;
     }
   }, [lightbox]);
 
-  // Close lightbox on Escape key
+  // Keyboard navigation: Escape, Left, Right
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") closeLightbox(); };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox();
+      if (e.key === "ArrowLeft") navigateLightbox(-1);
+      if (e.key === "ArrowRight") navigateLightbox(1);
+    };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [closeLightbox]);
+  }, [closeLightbox, navigateLightbox]);
 
   // Lock body scroll when lightbox is open
   useEffect(() => {
@@ -185,6 +244,34 @@ const GaleriaPublica = () => {
     else document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
   }, [lightbox]);
+
+  // Prefetch next/prev images for instant lightbox navigation
+  useEffect(() => {
+    if (!lightbox) return;
+    const idx = filteredFotos.findIndex(f => f.id === lightbox.id);
+    if (idx < 0) return;
+    [idx - 1, idx + 1].forEach(i => {
+      const f = filteredFotos[i];
+      if (f && !isVideoUrl(f.url_foto)) {
+        const img = new Image();
+        img.decoding = "async";
+        img.src = f.url_foto;
+      }
+    });
+  }, [lightbox, filteredFotos]);
+
+  // Photo count per album
+  const albumPhotoCounts = new Map<string, number>();
+  fotos.forEach(f => {
+    if (f.album_id) {
+      albumPhotoCounts.set(f.album_id, (albumPhotoCounts.get(f.album_id) || 0) + 1);
+    }
+  });
+
+  // Lightbox index info
+  const lightboxIdx = lightbox ? filteredFotos.findIndex(f => f.id === lightbox.id) : -1;
+  const hasPrev = lightboxIdx > 0;
+  const hasNext = lightboxIdx >= 0 && lightboxIdx < filteredFotos.length - 1;
 
   if (galeriaAtiva === null || loading) {
     return (
@@ -216,9 +303,8 @@ const GaleriaPublica = () => {
     );
   }
 
-  const filteredFotos = selectedAlbum
-    ? fotos.filter((f) => f.album_id === selectedAlbum)
-    : fotos;
+  const visibleFotos = filteredFotos.slice(0, visibleCount);
+  const hasMore = visibleCount < filteredFotos.length;
 
   return (
     <Layout>
@@ -234,90 +320,143 @@ const GaleriaPublica = () => {
             </p>
           </div>
 
-          {/* Album filter */}
+          {/* Album filter with counts */}
           {albuns.length > 0 && (
-            <div className="flex flex-wrap justify-center gap-2 mb-10">
-              <button
-                onClick={() => setSelectedAlbum(null)}
-                className={`rounded-full px-5 py-2 text-sm font-medium border transition-colors ${
-                  !selectedAlbum ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
-                }`}
-              >
-                Todas
-              </button>
-              {albuns.map((album) => (
+            <div className="mb-10">
+              <div className="flex flex-col sm:flex-row sm:flex-wrap sm:justify-center items-center gap-2 px-2">
                 <button
-                  key={album.id}
-                  onClick={() => setSelectedAlbum(album.id)}
-                  className={`rounded-full px-5 py-2 text-sm font-medium border transition-colors ${
-                    selectedAlbum === album.id ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
+                  onClick={() => setSelectedAlbum(null)}
+                  className={`w-full sm:w-auto rounded-full px-5 py-2.5 text-sm font-medium border transition-colors text-center ${
+                    !selectedAlbum ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
                   }`}
                 >
-                  {album.nome}
+                  Todas ({fotos.length})
                 </button>
-              ))}
+                {albuns.map((album) => {
+                  const isActive = selectedAlbum === album.id;
+                  return (
+                    <button
+                      key={album.id}
+                      onClick={() => setSelectedAlbum(album.id)}
+                      className={`w-full sm:w-auto rounded-full px-5 py-2.5 text-sm font-medium border transition-colors text-center ${
+                        isActive ? "bg-primary text-primary-foreground border-primary" : "bg-card border-border hover:bg-accent"
+                      }`}
+                    >
+                      {album.nome} ({albumPhotoCounts.get(album.id) || 0})
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Share bar for selected album */}
+              {selectedAlbum && (() => {
+                const album = albuns.find(a => a.id === selectedAlbum);
+                if (!album) return null;
+                return (
+                  <div className="flex items-center justify-center gap-2 mt-3">
+                    <button
+                      onClick={async () => {
+                        const albumUrl = `${window.location.origin}/galeria?album=${album.id}`;
+                        const texto = `📸 ${album.nome} — Galeria Fernanda Sarelli\n\n👉 Veja as fotos: ${albumUrl}`;
+                        if (navigator.share) {
+                          try {
+                            await navigator.share({ title: album.nome, text: texto, url: albumUrl });
+                            return;
+                          } catch { /* cancelled */ }
+                        }
+                        try {
+                          await navigator.clipboard.writeText(texto);
+                          toast.success("🔗 Link copiado!");
+                        } catch {
+                          const ta = document.createElement("textarea");
+                          ta.value = texto;
+                          ta.style.position = "fixed";
+                          ta.style.opacity = "0";
+                          document.body.appendChild(ta);
+                          ta.select();
+                          document.execCommand("copy");
+                          document.body.removeChild(ta);
+                          toast.success("🔗 Link copiado!");
+                        }
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-full px-4 py-1.5 text-xs font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                    >
+                      <Share2 className="h-3.5 w-3.5" />
+                      Compartilhar pasta
+                    </button>
+                  </div>
+                );
+              })()}
             </div>
           )}
 
           {/* Grid */}
           <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
-            {filteredFotos.map((foto, i) => {
+            {visibleFotos.map((foto, i) => {
               const isVideo = getFotoTipo(foto.url_foto) === "video";
               return (
-                <ParallaxRevealCard key={foto.id} delay={(i % 4) * 60}>
-                  <div
-                    className="rounded-2xl overflow-hidden border bg-card group cursor-pointer h-full flex flex-col active:scale-[0.97] transition-transform"
-                    onClick={() => openLightbox(foto)}
-                  >
-                    {isVideo ? (
-                      <div className="relative w-full aspect-[3/4] bg-muted">
-                        <video
-                          src={foto.url_foto}
-                          className="w-full h-full object-cover"
-                          muted
-                          preload="none"
-                          playsInline
-                          poster={decodeThumbnail(foto.legenda) || undefined}
-                        />
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                          <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_0_4px_rgba(255,255,255,0.35)] group-hover:scale-110 group-hover:shadow-[0_0_0_6px_rgba(255,255,255,0.45)] transition-all duration-200">
-                            <Play className="h-6 w-6 text-white ml-0.5" fill="white" />
-                          </div>
+                <div
+                  key={foto.id}
+                  className="rounded-2xl overflow-hidden border bg-card group cursor-pointer h-full flex flex-col active:scale-[0.97] transition-transform"
+                  onClick={() => openLightbox(foto)}
+                >
+                  {isVideo ? (
+                    <div className="relative w-full aspect-[3/4] bg-muted">
+                      <video
+                        src={foto.url_foto}
+                        className="w-full h-full object-cover"
+                        muted
+                        preload="none"
+                        playsInline
+                        poster={decodeThumbnail(foto.legenda) || undefined}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_0_4px_rgba(255,255,255,0.35)] group-hover:scale-110 group-hover:shadow-[0_0_0_6px_rgba(255,255,255,0.45)] transition-all duration-200">
+                          <Play className="h-6 w-6 text-white ml-0.5" fill="white" />
                         </div>
                       </div>
-                    ) : (
-                      <div className="w-full aspect-[3/4] bg-muted overflow-hidden">
-                        <img
-                          src={foto.url_foto}
-                          alt={foto.titulo}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                          style={getFocalStyle(foto.legenda)}
-                          loading={i < 6 ? "eager" : "lazy"}
-                          decoding="async"
-                        />
-                      </div>
-                    )}
-                    <div className="p-3 mt-auto">
-                      <div className="flex items-center gap-2">
-                        {isVideo && (
-                          <span className="text-[10px] font-semibold uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
-                            Vídeo
-                          </span>
-                        )}
-                        <p className="text-sm font-medium truncate">{foto.titulo}</p>
-                      </div>
-                      {foto.legenda && (() => {
-                        const { cleanLegenda } = decodeFocalPoint(foto.legenda);
-                        return cleanLegenda ? (
-                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{cleanLegenda}</p>
-                        ) : null;
-                      })()}
                     </div>
+                  ) : (
+                    <div className="w-full aspect-[3/4] bg-muted overflow-hidden">
+                      <img
+                        src={decodeThumbnail(foto.legenda) || foto.url_foto}
+                        alt={foto.titulo}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        style={getFocalStyle(foto.legenda)}
+                        loading={i < 8 ? "eager" : "lazy"}
+                        decoding="async"
+                        fetchPriority={i < 4 ? "high" : "auto"}
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                      />
+                    </div>
+                  )}
+                  <div className="p-3 mt-auto">
+                    <div className="flex items-center gap-2">
+                      {isVideo && (
+                        <span className="text-[10px] font-semibold uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
+                          Vídeo
+                        </span>
+                      )}
+                      <p className="text-sm font-medium truncate">{foto.titulo}</p>
+                    </div>
+                    {foto.legenda && (() => {
+                      const { cleanLegenda } = decodeFocalPoint(foto.legenda);
+                      return cleanLegenda ? (
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{cleanLegenda}</p>
+                      ) : null;
+                    })()}
                   </div>
-                </ParallaxRevealCard>
+                </div>
               );
             })}
           </div>
+
+          {/* Lazy load trigger */}
+          {hasMore && (
+            <div ref={loadMoreRef} className="flex justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
 
           {filteredFotos.length === 0 && (
             <p className="text-center text-muted-foreground py-16">
@@ -328,101 +467,156 @@ const GaleriaPublica = () => {
       </section>
 
       {/* Lightbox */}
-      {lightbox && (
+      {lightbox && createPortal(
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 sm:p-6"
+          className="fixed inset-0 z-[100] bg-black flex flex-col"
           onClick={closeLightbox}
+          role="dialog"
+          aria-modal="true"
         >
-          <button
-            onClick={closeLightbox}
-            className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
-            aria-label="Fechar"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
+          {/* TOP BAR */}
           <div
-            className="relative w-full max-w-4xl max-h-[92vh] flex flex-col rounded-xl overflow-hidden bg-card shadow-2xl"
+            className="flex-shrink-0 h-14 sm:h-16 flex items-center justify-between px-3 sm:px-5 bg-black/90"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-white/90 text-sm font-medium">
+              {lightboxIdx >= 0 ? `${lightboxIdx + 1} / ${filteredFotos.length}` : ""}
+            </div>
+            <button
+              onClick={closeLightbox}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors"
+              aria-label="Fechar"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* MEDIA AREA */}
+          <div
+            className="flex-1 min-h-0 relative flex items-center justify-center"
             onClick={(e) => e.stopPropagation()}
           >
             {getFotoTipo(lightbox.url_foto) === "video" ? (
               <video
                 ref={videoRef}
                 src={lightbox.url_foto}
-                className="w-full max-h-[78vh] bg-black"
+                className="max-w-full max-h-full object-contain"
                 controls
-                muted={false}
                 autoPlay
                 playsInline
                 controlsList="nodownload"
                 onPlay={handleVideoPlay}
                 onPause={handleVideoPause}
-                onLoadStart={() => setImgLoaded(false)}
-                onCanPlay={() => setImgLoaded(true)}
               />
             ) : (
-              <div className="relative w-full max-h-[78vh] flex items-center justify-center bg-black min-h-[200px]">
-                {!imgLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="h-8 w-8 animate-spin text-white/60" />
-                  </div>
-                )}
-                <img
-                  src={lightbox.url_foto}
-                  alt={lightbox.titulo}
-                  className="max-w-full max-h-[78vh] object-contain"
-                  style={{ display: imgLoaded ? "block" : "none" }}
-                  onLoad={() => setImgLoaded(true)}
-                />
-              </div>
+              <img
+                src={lightbox.url_foto}
+                alt={lightbox.titulo}
+                className="max-w-full max-h-full object-contain"
+                decoding="async"
+                fetchPriority="high"
+              />
             )}
 
-            <div className="p-4 shrink-0">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    {getFotoTipo(lightbox.url_foto) === "video" && (
-                      <span className="text-xs font-semibold uppercase bg-primary/10 text-primary px-2 py-0.5 rounded shrink-0">
-                        Vídeo
-                      </span>
-                    )}
-                    <p className="font-semibold truncate">{lightbox.titulo}</p>
-                  </div>
-                  {lightbox.legenda && (() => {
-                    const { cleanLegenda } = decodeFocalPoint(lightbox.legenda);
-                    return cleanLegenda ? (
-                      <p className="text-sm text-muted-foreground mt-1">{cleanLegenda}</p>
-                    ) : null;
-                  })()}
-                </div>
-                <button
-                  onClick={async () => {
-                    const fotoUrl = `${window.location.origin}/galeria?foto=${lightbox.id}`;
-                    const texto = `${lightbox.titulo} — Fernanda Sarelli\n\n📷 Veja a foto: ${fotoUrl}`;
-                    if (navigator.share) {
-                      try {
-                        await navigator.share({
-                          title: lightbox.titulo,
-                          text: texto,
-                          url: fotoUrl,
-                        });
-                      } catch { /* cancelled */ }
-                    } else {
-                      await navigator.clipboard.writeText(texto);
-                      toast.success("Link copiado!");
-                    }
-                  }}
-                  className="shrink-0 flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                  title="Compartilhar"
-                >
-                  <Share2 className="h-4 w-4" />
-                  <span className="hidden sm:inline">Compartilhar</span>
-                </button>
+            {/* NAV */}
+            {hasPrev && (
+              <button
+                onClick={(e) => { e.stopPropagation(); navigateLightbox(-1); }}
+                className="absolute left-2 sm:left-5 top-1/2 -translate-y-1/2 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors"
+                aria-label="Anterior"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+            )}
+            {hasNext && (
+              <button
+                onClick={(e) => { e.stopPropagation(); navigateLightbox(1); }}
+                className="absolute right-2 sm:right-5 top-1/2 -translate-y-1/2 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors"
+                aria-label="Próxima"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            )}
+          </div>
+
+          {/* BOTTOM BAR */}
+          <div
+            className="flex-shrink-0 flex items-center justify-between gap-3 px-3 sm:px-5 py-3 bg-black/90"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                {getFotoTipo(lightbox.url_foto) === "video" && (
+                  <span className="text-[10px] font-semibold uppercase bg-primary/20 text-primary px-2 py-0.5 rounded shrink-0">
+                    Vídeo
+                  </span>
+                )}
+                {lightbox.titulo && lightbox.titulo.trim() && (
+                  <p className="text-sm font-medium truncate text-white">{lightbox.titulo}</p>
+                )}
               </div>
+              {lightbox.legenda && (() => {
+                const { cleanLegenda } = decodeFocalPoint(lightbox.legenda);
+                return cleanLegenda ? (
+                  <p className="text-xs text-white/60 truncate mt-0.5">{cleanLegenda}</p>
+                ) : null;
+              })()}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(lightbox.url_foto);
+                    const blob = await res.blob();
+                    const ext = isVideoUrl(lightbox.url_foto) ? "mp4" : "jpg";
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `${(lightbox.titulo || "foto").replace(/[^a-zA-Z0-9À-ú ]/g, "").trim() || "foto"}.${ext}`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    toast.success("Download iniciado!");
+                  } catch {
+                    toast.error("Erro ao baixar.");
+                  }
+                }}
+                className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 h-9 text-sm font-medium bg-white text-black hover:bg-white/90 transition-colors"
+                title="Baixar"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Baixar</span>
+              </button>
+              <button
+                onClick={async () => {
+                  const fotoUrl = `${window.location.origin}/galeria?foto=${lightbox.id}`;
+                  const texto = `${lightbox.titulo || "Foto"} — Fernanda Sarelli\n\n📷 Veja mais: ${fotoUrl}`;
+                  if (navigator.share) {
+                    try {
+                      const res = await fetch(lightbox.url_foto);
+                      const blob = await res.blob();
+                      const ext = isVideoUrl(lightbox.url_foto) ? "mp4" : "jpg";
+                      const mimeType = isVideoUrl(lightbox.url_foto) ? "video/mp4" : "image/jpeg";
+                      const file = new File([blob], `foto.${ext}`, { type: mimeType });
+                      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({ title: lightbox.titulo || "Foto", text: texto, url: fotoUrl, files: [file] });
+                      } else {
+                        await navigator.share({ title: lightbox.titulo || "Foto", text: texto, url: fotoUrl });
+                      }
+                    } catch { /* cancelled */ }
+                  } else {
+                    await navigator.clipboard.writeText(texto);
+                    toast.success("Link copiado!");
+                  }
+                }}
+                className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 h-9 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                title="Compartilhar"
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Compartilhar</span>
+              </button>
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </Layout>
   );
 };

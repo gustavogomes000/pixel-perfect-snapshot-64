@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import {
   Plus, Trash2, Eye, EyeOff, Upload, FolderPlus, Sparkles, Eraser,
   Pin, Pencil, ArrowLeft, ArrowRight, Check, X, FolderOpen, ImagePlus,
-  Move, ChevronDown, Camera, Images, Video, Play, Crosshair
+  Move, ChevronDown, Camera, Images, Video, Play, Crosshair, Share2, Link
 } from "lucide-react";
 import FocalPointPicker, { encodeFocalPoint, decodeFocalPoint, getFocalStyle, decodeThumbnail } from "@/components/admin/FocalPointPicker";
 import { supabase } from "@/lib/supabaseDb";
@@ -26,7 +26,10 @@ interface Album {
   id: string;
   nome: string;
   descricao: string | null;
+  capa_url: string | null;
   ordem: number | null;
+  fixado_home: boolean;
+  atualizado_em: string;
 }
 
 interface Foto {
@@ -69,42 +72,178 @@ const isVideoUrl = (url: string) => {
   return VIDEO_EXTENSIONS.some(ext => lower.includes(ext));
 };
 
-const compressImage = (file: File, maxPx = 2048, quality = 0.92): Promise<File> => {
+// Detect WebP encoding support
+let _webpSupported: boolean | null = null;
+const supportsWebP = (): Promise<boolean> => {
+  if (_webpSupported !== null) return Promise.resolve(_webpSupported);
   return new Promise((resolve) => {
-    if (!file.type.startsWith("image/") || file.size < 800 * 1024) {
-      resolve(file);
-      return;
+    const canvas = document.createElement("canvas");
+    canvas.width = 1; canvas.height = 1;
+    canvas.toBlob((b) => {
+      _webpSupported = !!b && b.type === "image/webp";
+      resolve(_webpSupported);
+    }, "image/webp", 0.8);
+  });
+};
+
+/**
+ * Decode an image safely — handles HUGE camera files (20-50MB, 8000×6000+) on iOS/Safari
+ * by using createImageBitmap when available (off-thread, no memory blow-up),
+ * falling back to <img> for older browsers.
+ */
+const decodeImageSafe = async (file: File): Promise<{ bitmap: ImageBitmap | HTMLImageElement; width: number; height: number; cleanup: () => void }> => {
+  // Modern path: createImageBitmap respects EXIF orientation, decodes off-thread, handles huge files
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" } as ImageBitmapOptions);
+      return { bitmap, width: bitmap.width, height: bitmap.height, cleanup: () => bitmap.close?.() };
+    } catch {
+      // Fall through to <img> fallback
     }
+  }
+  // Fallback: <img> + object URL (works on older Safari but uses more RAM)
+  const blobUrl = URL.createObjectURL(file);
+  return new Promise((resolve, reject) => {
     const img = new Image();
-    const blobUrl = URL.createObjectURL(file);
-    img.onload = () => {
-      URL.revokeObjectURL(blobUrl);
-      let { width, height } = img;
-      if (width <= maxPx && height <= maxPx) {
-        resolve(file);
-        return;
-      }
-      if (width > height) {
-        height = Math.round((height * maxPx) / width);
-        width = maxPx;
-      } else {
-        width = Math.round((width * maxPx) / height);
-        height = maxPx;
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d")!;
-      ctx.drawImage(img, 0, 0, width, height);
-      canvas.toBlob((blob) => {
-        if (!blob) { resolve(file); return; }
-        const outName = file.name.replace(/\.[^.]+$/, ".jpg");
-        resolve(new File([blob], outName, { type: "image/jpeg" }));
-      }, "image/jpeg", quality);
-    };
-    img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(file); };
+    img.onload = () => resolve({ bitmap: img, width: img.naturalWidth, height: img.naturalHeight, cleanup: () => URL.revokeObjectURL(blobUrl) });
+    img.onerror = () => { URL.revokeObjectURL(blobUrl); reject(new Error("decode failed")); };
     img.src = blobUrl;
   });
+};
+
+/**
+ * MAXIMUM-fidelity compression — qualidade visual indistinguível do original.
+ * - Max 3200px no lado mais longo (cobre 4K perfeito) · WebP 0.96 / JPEG 0.97
+ * - Downscale progressivo (box-filter passo-a-passo) preserva nitidez total
+ * - Se o resultado ficar maior que o original, MANTÉM o original intacto
+ * - DSLR 25MB → ~1.5-3MB · Celular 8MB → ~800KB-1.5MB · Zero perda visível
+ */
+const compressImage = async (file: File, maxPx = 3200, jpegQuality = 0.97, webpQuality = 0.96): Promise<File> => {
+  if (!file.type.startsWith("image/") || file.size < 200 * 1024) return file;
+
+  let decoded;
+  try { decoded = await decodeImageSafe(file); } catch { return file; }
+
+  try {
+    const { bitmap, cleanup } = decoded;
+    const { width, height } = decoded;
+    const longest = Math.max(width, height);
+
+    let finalW = width, finalH = height;
+    if (longest > maxPx) {
+      const ratio = maxPx / longest;
+      finalW = Math.round(width * ratio);
+      finalH = Math.round(height * ratio);
+    }
+
+    let currentSrc: ImageBitmap | HTMLImageElement | HTMLCanvasElement = bitmap;
+    let currentW = width, currentH = height;
+    while (currentW > finalW * 2 && currentH > finalH * 2) {
+      const nextW = Math.max(finalW, Math.round(currentW / 2));
+      const nextH = Math.max(finalH, Math.round(currentH / 2));
+      const stepCanvas = document.createElement("canvas");
+      stepCanvas.width = nextW; stepCanvas.height = nextH;
+      const stepCtx = stepCanvas.getContext("2d", { alpha: false });
+      if (!stepCtx) break;
+      stepCtx.imageSmoothingEnabled = true;
+      stepCtx.imageSmoothingQuality = "high";
+      stepCtx.drawImage(currentSrc as CanvasImageSource, 0, 0, nextW, nextH);
+      currentSrc = stepCanvas;
+      currentW = nextW; currentH = nextH;
+    }
+
+    const canvas = document.createElement("canvas");
+    canvas.width = finalW; canvas.height = finalH;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) { cleanup(); return file; }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(currentSrc as CanvasImageSource, 0, 0, finalW, finalH);
+    cleanup();
+
+    const useWebp = await supportsWebP();
+    const mimeType = useWebp ? "image/webp" : "image/jpeg";
+    const quality = useWebp ? webpQuality : jpegQuality;
+    const ext = useWebp ? ".webp" : ".jpg";
+
+    return await new Promise<File>((resolve) => {
+      canvas.toBlob((blob) => {
+        if (!blob) { resolve(file); return; }
+        if (blob.size >= file.size) { resolve(file); return; }
+        const outName = file.name.replace(/\.[^.]+$/, ext);
+        resolve(new File([blob], outName, { type: mimeType }));
+      }, mimeType, quality);
+    });
+  } catch {
+    decoded.cleanup();
+    return file;
+  }
+};
+
+/**
+ * Generate thumbnail (640px, WebP 0.72) — ~40-90KB.
+ * Used in grid for INSTANT loading + as nítida preview no lightbox.
+ */
+const generateThumbnail = async (file: File, maxPx = 640, quality = 0.72): Promise<Blob | null> => {
+  if (!file.type.startsWith("image/")) return null;
+  let decoded;
+  try { decoded = await decodeImageSafe(file); } catch { return null; }
+  try {
+    const { bitmap, cleanup, width, height } = decoded;
+    const longest = Math.max(width, height);
+    const ratio = longest > maxPx ? maxPx / longest : 1;
+    const w = Math.round(width * ratio), h = Math.round(height * ratio);
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) { cleanup(); return null; }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(bitmap as CanvasImageSource, 0, 0, w, h);
+    cleanup();
+    const useWebp = await supportsWebP();
+    return await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((b) => resolve(b), useWebp ? "image/webp" : "image/jpeg", quality);
+    });
+  } catch { decoded.cleanup(); return null; }
+};
+
+// Upload single file with retry (5 attempts, exponential backoff up to ~5s)
+// Survives flaky networks, mobile data drops, server hiccups.
+const uploadWithRetry = async (signedUrl: string, file: File | Blob, contentType: string, maxAttempts = 5): Promise<Response> => {
+  let lastErr: unknown = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(signedUrl, {
+        method: "PUT",
+        headers: { "Content-Type": contentType || "application/octet-stream" },
+        body: file,
+      });
+      if (res.ok) return res;
+      // 4xx (except 408/429) won't get better with retries
+      if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
+        return res;
+      }
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      lastErr = err;
+    }
+    if (attempt < maxAttempts) {
+      // 500ms, 1s, 2s, 4s
+      await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt - 1)));
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("Upload falhou após várias tentativas");
+};
+
+// Safe wrapper: NEVER throws. Returns original file if compression fails (HEIC, corrupted, OOM, etc.)
+const compressImageSafe = async (file: File): Promise<File> => {
+  try {
+    const result = await compressImage(file);
+    return result || file;
+  } catch {
+    return file;
+  }
 };
 
 const WRITE_BLOCKED_MESSAGE = "Edições bloqueadas no painel: configure a service_role key correta do backend externo para liberar salvar, mover e apagar.";
@@ -175,6 +314,8 @@ const Gallery = () => {
   const [writeEnabled, setWriteEnabled] = useState<boolean | null>(null);
   const [writeErrorMessage, setWriteErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
 
   const [pendingUploads, setPendingUploads] = useState<Array<{ file: File; previewUrl: string; focalX: number; focalY: number; zoom: number; isVideo?: boolean; thumbnailDataUrl?: string | null }>>([]);
@@ -274,6 +415,29 @@ const Gallery = () => {
     }
   };
 
+  const toggleAlbumPin = async (albumId: string, currentPinned: boolean) => {
+    if (!ensureWriteEnabled()) return;
+    try {
+      await galleryAdmin({ action: "update-album", id: albumId, fixado_home: !currentPinned });
+      toast.success(!currentPinned ? "📌 Pasta fixada na home" : "Pasta removida da home");
+      await loadData();
+    } catch (error) {
+      handleActionError(error, "Erro ao fixar/desfixar pasta.");
+    }
+  };
+
+  const setAlbumCover = async (albumId: string, coverUrl: string) => {
+    if (!ensureWriteEnabled()) return;
+    if (!window.confirm("Definir esta foto como capa da pasta?")) return;
+    try {
+      await galleryAdmin({ action: "update-album", id: albumId, capa_url: coverUrl });
+      toast.success("Capa da pasta atualizada!");
+      await loadData();
+    } catch (error) {
+      handleActionError(error, "Erro ao definir capa.");
+    }
+  };
+
   const moveAlbum = async (albumId: string, direction: "left" | "right") => {
     const idx = albuns.findIndex((a) => a.id === albumId);
     if (idx < 0 || !ensureWriteEnabled()) return;
@@ -313,16 +477,6 @@ const Gallery = () => {
     }
   };
 
-  const toggleDestaqueHome = async (id: string, atual: boolean) => {
-    if (!ensureWriteEnabled()) return;
-    try {
-      await galleryAdmin({ action: "update-photo", id, updates: { destaque_home: !atual } });
-      toast.success(!atual ? "📌 Fixado na página inicial" : "Removido da página inicial");
-      await loadData();
-    } catch (error) {
-      handleActionError(error, "Erro ao alterar destaque.");
-    }
-  };
 
   const movePhotoToAlbum = async (photoId: string, albumId: string | null) => {
     if (!ensureWriteEnabled()) return;
@@ -403,30 +557,14 @@ const Gallery = () => {
   };
 
   // === Upload (photos + videos) ===
-  // Limites de segurança: evita travar navegador e estourar bucket
-  const MAX_PHOTO_SIZE = 50 * 1024 * 1024;   // 50 MB por foto
-  const MAX_VIDEO_SIZE = 200 * 1024 * 1024;  // 200 MB por vídeo
-  const MAX_FILES_PER_BATCH = 30;
-
   const stageFilesForPreview = (files: File[]) => {
     const mediaFiles = files.filter(f => f.type.startsWith("image/") || f.type.startsWith("video/"));
     if (mediaFiles.length === 0) {
       toast.error("Nenhum arquivo válido. Selecione fotos ou vídeos.");
       return;
     }
-
-    if (mediaFiles.length > MAX_FILES_PER_BATCH) {
-      toast.error(`Máximo de ${MAX_FILES_PER_BATCH} arquivos por envio. Selecionados: ${mediaFiles.length}.`);
-      return;
-    }
-
-    const oversize = mediaFiles.find(f => {
-      const limit = f.type.startsWith("video/") ? MAX_VIDEO_SIZE : MAX_PHOTO_SIZE;
-      return f.size > limit;
-    });
-    if (oversize) {
-      const limitMB = oversize.type.startsWith("video/") ? 200 : 50;
-      toast.error(`"${oversize.name}" excede o limite de ${limitMB} MB.`);
+    if (mediaFiles.length > 200) {
+      toast.error(`Máximo de 200 arquivos por vez. Você selecionou ${mediaFiles.length}.`);
       return;
     }
 
@@ -450,86 +588,172 @@ const Gallery = () => {
     setUploadProgress(0);
 
     const toastId = `upload-${Date.now()}`;
-    toast.loading(`Enviando ${items.length} arquivo(s)...`, { id: toastId });
+    toast.loading(`Preparando ${items.length} arquivo(s)...`, { id: toastId });
 
-    // Compress all images in parallel first
+    // 1. Compress all images in parallel — NEVER fails (falls back to original on any error)
     const prepared = await Promise.all(
       items.map(async (item) => {
         const isVideo = isVideoFile(item.file);
-        const fileToUpload = isVideo ? item.file : await compressImage(item.file);
+        const fileToUpload = isVideo ? item.file : await compressImageSafe(item.file);
         return { ...item, fileToUpload, isVideo };
       })
     );
 
-    let successCount = 0;
-    let done = 0;
+    // 2. Build all paths and get signed URLs in a single batch request
+    const allPaths: string[] = [];
+    const thumbPaths: (string | null)[] = [];
 
-    // Upload up to 3 files in parallel
-    const CONCURRENCY = 3;
-    const chunks: typeof prepared[] = [];
-    for (let i = 0; i < prepared.length; i += CONCURRENCY) {
-      chunks.push(prepared.slice(i, i + CONCURRENCY));
+    for (const { fileToUpload, isVideo, thumbnailDataUrl, file: origFile } of prepared) {
+      // Strict sanitization for Supabase Storage keys (no accents, no parens, no special chars)
+      const dotIdx = fileToUpload.name.lastIndexOf(".");
+      const rawBase = dotIdx > 0 ? fileToUpload.name.slice(0, dotIdx) : fileToUpload.name;
+      const rawExt = dotIdx > 0 ? fileToUpload.name.slice(dotIdx + 1) : "";
+      const cleanBase = rawBase
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip accents (ç → c, ã → a)
+        .replace(/[^a-zA-Z0-9._-]+/g, "-") // only safe chars
+        .replace(/-+/g, "-").replace(/^-|-$/g, "")
+        .slice(0, 60).toLowerCase() || "file";
+      const cleanExt = rawExt.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "bin";
+      const sanitizedName = `${cleanBase}.${cleanExt}`;
+      const folder = isVideo ? "videos" : "galeria";
+      const uid = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+      allPaths.push(`${folder}/${uid}_${sanitizedName}`);
+
+      if (isVideo && thumbnailDataUrl) {
+        thumbPaths.push(`thumbnails/${uid}.jpg`);
+      } else if (!isVideo) {
+        // Photo thumbnail for fast grid loading
+        thumbPaths.push(`thumbnails/${uid}.webp`);
+      } else {
+        thumbPaths.push(null);
+      }
     }
 
-    for (const chunk of chunks) {
-      await Promise.allSettled(
-        chunk.map(async ({ file, fileToUpload, focalX, focalY, zoom, isVideo, thumbnailDataUrl }) => {
-          const sanitizedName = fileToUpload.name.replace(/\s+/g, "-").toLowerCase();
-          const folder = isVideo ? "videos" : "galeria";
-          const path = `${folder}/${Date.now()}_${Math.random().toString(36).slice(2)}_${sanitizedName}`;
-          const { error: uploadError } = await cloudSupabase.storage.from("galeria").upload(path, fileToUpload);
+    const pathsToSign = [...allPaths, ...thumbPaths.filter(Boolean) as string[]];
 
-          if (uploadError) {
-            toast.error(`Erro: "${file.name}" — ${uploadError.message}`);
-            return;
-          }
+    let signedUrlMap: Map<string, string>;
+    try {
+      const result = await galleryAdmin({ action: "create-upload-urls", paths: pathsToSign });
+      const urls = result.urls as Array<{ path: string; signedUrl?: string; error?: string }>;
+      signedUrlMap = new Map(urls.filter(u => u.signedUrl).map(u => [u.path, u.signedUrl!]));
+    } catch {
+      toast.error("Erro ao preparar URLs de upload");
+      setUploading(false);
+      toast.dismiss(toastId);
+      return;
+    }
 
-          const { data: urlData } = cloudSupabase.storage.from("galeria").getPublicUrl(path);
+    toast.loading(`Enviando ${items.length} arquivo(s)...`, { id: toastId });
 
-          // Upload video thumbnail if available
-          let legendaBase: string | null = null;
-          if (isVideo && thumbnailDataUrl) {
+    // 3. Upload files SEQUENTIALLY (concurrency = 1) for max stability + retry on each
+    let done = 0;
+    const successfulPhotos: Array<Record<string, unknown>> = [];
+    const failedFiles: string[] = [];
+
+    for (let idx = 0; idx < prepared.length; idx++) {
+      const item = prepared[idx];
+      const mainPath = allPaths[idx];
+      const thumbPath = thumbPaths[idx];
+      const signedUrl = signedUrlMap.get(mainPath);
+
+      if (!signedUrl) {
+        failedFiles.push(item.file.name);
+        done++;
+        setUploadProgress(Math.round((done / prepared.length) * 100));
+        continue;
+      }
+
+      try {
+        const uploadRes = await uploadWithRetry(
+          signedUrl,
+          item.fileToUpload,
+          item.fileToUpload.type || "application/octet-stream",
+        );
+
+        if (!uploadRes.ok) {
+          failedFiles.push(`${item.file.name} (${uploadRes.status})`);
+          done++;
+          setUploadProgress(Math.round((done / prepared.length) * 100));
+          toast.loading(`Enviando… ${done}/${prepared.length}`, { id: toastId });
+          continue;
+        }
+
+        const { data: urlData } = cloudSupabase.storage.from("galeria").getPublicUrl(mainPath);
+
+        let legendaBase: string | null = null;
+
+        // VIDEO: upload poster frame thumbnail
+        if (item.isVideo && item.thumbnailDataUrl && thumbPath) {
+          const thumbSignedUrl = signedUrlMap.get(thumbPath);
+          if (thumbSignedUrl) {
             try {
-              const res = await fetch(thumbnailDataUrl);
+              const res = await fetch(item.thumbnailDataUrl);
               const blob = await res.blob();
-              const thumbPath = `thumbnails/${Date.now()}_${Math.random().toString(36).slice(2)}.jpg`;
-              const { error: thumbErr } = await cloudSupabase.storage.from("galeria").upload(thumbPath, blob, { contentType: "image/jpeg" });
-              if (!thumbErr) {
+              const thumbRes = await uploadWithRetry(thumbSignedUrl, blob, "image/jpeg", 2);
+              if (thumbRes.ok) {
                 const { data: thumbUrl } = cloudSupabase.storage.from("galeria").getPublicUrl(thumbPath);
                 legendaBase = `[tn:${thumbUrl.publicUrl}]`;
               }
-            } catch {
-              // thumbnail upload failed, continue without it
-            }
+            } catch { /* thumb opcional */ }
           }
+        }
 
-          try {
-            const legendaWithFp = encodeFocalPoint(legendaBase, focalX, focalY, zoom);
-            await galleryAdmin({ action: "insert-photo", photo: {
-              titulo: file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
-              url_foto: urlData.publicUrl,
-              album_id: selectedAlbum,
-              visivel: true,
-              legenda: legendaWithFp || null,
-            }});
-            successCount += 1;
-          } catch (error) {
-            handleActionError(error, `Erro ao salvar "${file.name}"`);
+        // PHOTO: generate + upload micro-thumbnail (~20-50KB) for instant grid loading
+        if (!item.isVideo && thumbPath) {
+          const thumbSignedUrl = signedUrlMap.get(thumbPath);
+          if (thumbSignedUrl) {
+            try {
+              const thumbBlob = await generateThumbnail(item.file);
+              if (thumbBlob) {
+                const thumbRes = await uploadWithRetry(thumbSignedUrl, thumbBlob, thumbBlob.type || "image/webp", 2);
+                if (thumbRes.ok) {
+                  const { data: thumbUrl } = cloudSupabase.storage.from("galeria").getPublicUrl(thumbPath);
+                  legendaBase = `[tn:${thumbUrl.publicUrl}]`;
+                }
+              }
+            } catch { /* thumb opcional, foto principal já foi enviada */ }
           }
+        }
 
-          done += 1;
-          setUploadProgress(Math.round((done / prepared.length) * 100));
-          toast.loading(`Enviando… ${done}/${prepared.length}`, { id: toastId });
-        })
-      );
+        const legendaWithFp = encodeFocalPoint(legendaBase, item.focalX, item.focalY, item.zoom);
+        successfulPhotos.push({
+          // Padrão: SEM nome. Usuário define depois se quiser. Espaço único satisfaz NOT NULL.
+          titulo: " ",
+          url_foto: urlData.publicUrl,
+          album_id: selectedAlbum,
+          visivel: true,
+          legenda: legendaWithFp || null,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "erro";
+        failedFiles.push(`${item.file.name} (${msg})`);
+      }
+
+      done++;
+      setUploadProgress(Math.round((done / prepared.length) * 100));
+      toast.loading(`Enviando… ${done}/${prepared.length}`, { id: toastId });
+    }
+
+    // 4. Batch insert all photos in a single DB call
+    if (successfulPhotos.length > 0) {
+      try {
+        await galleryAdmin({ action: "insert-photos", photos: successfulPhotos });
+      } catch (error) {
+        handleActionError(error, "Erro ao salvar fotos no banco.");
+      }
     }
 
     setUploadProgress(100);
     setUploading(false);
     toast.dismiss(toastId);
 
-    if (successCount > 0) {
-      toast.success(`✅ ${successCount} arquivo(s) enviado(s) com sucesso!`);
+    if (successfulPhotos.length > 0) {
+      toast.success(`✅ ${successfulPhotos.length} arquivo(s) enviado(s) com sucesso!`);
+    }
+    if (failedFiles.length > 0) {
+      toast.error(`${failedFiles.length} falhou(aram). Tente reenviar: ${failedFiles.slice(0, 3).join(", ")}${failedFiles.length > 3 ? "…" : ""}`, { duration: 8000 });
+    }
+    if (successfulPhotos.length > 0) {
       await loadData();
     }
   };
@@ -557,6 +781,21 @@ const Gallery = () => {
     pendingUploads.forEach(p => URL.revokeObjectURL(p.previewUrl));
     setPendingUploads([]);
     setShowUploadPreview(false);
+  };
+
+  const removePendingUpload = (index: number) => {
+    setPendingUploads(prev => {
+      const removed = prev[index];
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 0) {
+        setShowUploadPreview(false);
+        setPreviewIndex(0);
+      } else {
+        setPreviewIndex(idx => Math.min(idx, next.length - 1));
+      }
+      return next;
+    });
   };
 
   const handleFileDrop = async (e: React.DragEvent) => {
@@ -693,7 +932,8 @@ const Gallery = () => {
           </div>
         </div>
 
-        {/* ===== UPLOAD AREA ===== */}
+        {/* ===== UPLOAD AREA — múltiplas fontes (mobile + desktop) ===== */}
+        {/* Input: arquivo geral (qualquer arquivo de imagem/vídeo, inclui drag-drop e Drive via "Open with") */}
         <input
           ref={fileInputRef}
           type="file"
@@ -705,16 +945,55 @@ const Gallery = () => {
             if (e.target) e.target.value = "";
           }}
         />
+        {/* Input: câmera (mobile abre a câmera direto; desktop pode ignorar capture) */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*,video/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            stageFilesForPreview(Array.from(e.target.files || []));
+            if (e.target) e.target.value = "";
+          }}
+        />
+        {/* Input: galeria/fotos (mobile mostra picker de fotos; desktop = file picker) */}
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            stageFilesForPreview(Array.from(e.target.files || []));
+            if (e.target) e.target.value = "";
+          }}
+        />
 
         <div
-          onClick={() => fileInputRef.current?.click()}
+          role="button"
+          tabIndex={0}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleFileDrop}
-          className={`relative rounded-2xl border-2 border-dashed p-5 text-center transition-all cursor-pointer
+          onClick={(e) => {
+            if (uploading) return;
+            // Não abrir se clicou em um botão interno
+            const target = e.target as HTMLElement;
+            if (target.closest("button")) return;
+            fileInputRef.current?.click();
+          }}
+          onKeyDown={(e) => {
+            if (uploading) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
+          className={`relative rounded-2xl border-2 border-dashed p-4 sm:p-5 text-center transition-all cursor-pointer
             ${dragOver
               ? "border-primary bg-accent scale-[1.01]"
-              : "border-muted-foreground/30 hover:border-primary hover:bg-accent/30"
+              : "border-muted-foreground/30 hover:border-primary/50 hover:bg-accent/30"
             }
             ${uploading ? "pointer-events-none opacity-70" : ""}
           `}
@@ -728,32 +1007,73 @@ const Gallery = () => {
                 />
               </div>
               <p className="text-sm text-muted-foreground">Enviando arquivos... {uploadProgress}%</p>
+              <p className="text-xs text-muted-foreground/70">Não feche esta página</p>
             </div>
           ) : (
-            <>
-              <div className="flex justify-center gap-2 mb-2">
-                <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div className="space-y-3">
+              <div className="flex justify-center gap-2">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Camera className="h-5 w-5 text-primary" />
                 </div>
-                <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Images className="h-5 w-5 text-primary" />
+                </div>
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Video className="h-5 w-5 text-primary" />
                 </div>
               </div>
               <p className="text-sm font-semibold">
-                Toque para enviar fotos ou vídeos
+                Enviar fotos e vídeos
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                JPG, PNG, MP4, WebM
+
+              {/* Botões de fonte: ficam em coluna no mobile, lado a lado no desktop */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-xl mx-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl h-12 gap-2 font-medium"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <Camera className="h-4 w-4" />
+                  Tirar foto / Gravar
+                </Button>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="rounded-xl h-12 gap-2 font-medium"
+                  onClick={() => galleryInputRef.current?.click()}
+                >
+                  <Images className="h-4 w-4" />
+                  Galeria do aparelho
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl h-12 gap-2 font-medium"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  Arquivos / Drive
+                </Button>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground">
+                JPG, PNG, HEIC, MP4, WebM · até 50 por vez · arraste arquivos aqui também
               </p>
+              <p className="text-[10px] text-muted-foreground/80">
+                Dica: para enviar do <strong>Google Drive</strong>, toque em "Arquivos / Drive" e escolha o Drive no seletor do seu celular.
+              </p>
+
               {selectedAlbumName && (
-                <Badge variant="secondary" className="mt-3">
+                <Badge variant="secondary" className="mt-1">
                   <FolderOpen className="h-3 w-3 mr-1" />
                   Serão salvos em: {selectedAlbumName}
                 </Badge>
               )}
-            </>
+            </div>
           )}
         </div>
+
 
         {/* ===== SECONDARY ACTIONS ===== */}
         <div className="flex flex-wrap items-center gap-1.5">
@@ -893,6 +1213,7 @@ const Gallery = () => {
                         : "bg-card border-border hover:bg-accent hover:border-primary/30"
                     }`}
                   >
+                    {album.fixado_home && <Pin className="h-3 w-3" />}
                     📁 {album.nome}
                     <span className={`text-xs rounded-full px-1.5 py-0.5 ${isSelected ? "bg-primary-foreground/20" : "bg-muted"}`}>
                       {count}
@@ -911,6 +1232,26 @@ const Gallery = () => {
                           <ArrowRight className="h-3.5 w-3.5" />
                         </button>
                       )}
+                      <button
+                        onClick={() => toggleAlbumPin(album.id, !!album.fixado_home)}
+                        className={`h-7 w-7 flex items-center justify-center rounded-lg border transition-colors ${
+                          album.fixado_home ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                        }`}
+                        title={album.fixado_home ? "Remover da home" : "Fixar na home"}
+                      >
+                        <Pin className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          const albumUrl = `${window.location.origin}/galeria?album=${album.id}`;
+                          navigator.clipboard.writeText(albumUrl);
+                          toast.success("🔗 Link da pasta copiado!");
+                        }}
+                        className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent border"
+                        title="Copiar link da pasta"
+                      >
+                        <Share2 className="h-3.5 w-3.5" />
+                      </button>
                       <button
                         onClick={() => { setEditAlbumId(album.id); setEditAlbumName(album.nome); setEditAlbumOpen(true); }}
                         className="h-7 w-7 flex items-center justify-center rounded-lg hover:bg-accent border"
@@ -1021,17 +1362,72 @@ const Gallery = () => {
 
         {/* Dialog prévia de upload com ponto focal / thumbnail de vídeo */}
         <Dialog open={showUploadPreview} onOpenChange={(open) => { if (!open) cancelUploadPreviews(); }}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {pendingUploads[previewIndex]?.isVideo ? "Selecionar capa do vídeo" : "Posicionar foto"} {previewIndex + 1} de {pendingUploads.length}
+          <DialogContent className="max-w-2xl w-[calc(100vw-1rem)] sm:w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-base sm:text-lg pr-6">
+                {pendingUploads[previewIndex]?.isVideo ? "Selecionar capa do vídeo" : "Posicionar foto"}{" "}
+                <span className="text-muted-foreground font-normal">
+                  {previewIndex + 1} de {pendingUploads.length}
+                </span>
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs sm:text-sm">
                 {pendingUploads[previewIndex]?.isVideo
-                  ? "Arraste o vídeo até o frame desejado e clique em Capturar frame. Se não selecionar, será capturado automaticamente."
+                  ? "Arraste o vídeo até o frame desejado e clique em Capturar frame."
                   : "Toque na imagem para definir o ponto focal. As fotos serão exibidas inteiras, sem corte."}
               </DialogDescription>
             </DialogHeader>
+
+            {/* Tira de miniaturas para navegar rápido entre as fotos pendentes */}
+            {pendingUploads.length > 1 && (
+              <div className="-mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto pb-1">
+                <div className="flex gap-2 min-w-max">
+                  {pendingUploads.map((p, i) => {
+                    const isActive = i === previewIndex;
+                    const adjusted = !p.isVideo && (p.focalX !== 50 || p.focalY !== 50 || p.zoom !== 100);
+                    const ready = p.isVideo ? !!p.thumbnailDataUrl : adjusted;
+                    return (
+                      <div key={i} className="relative shrink-0 group">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewIndex(i)}
+                          className={`relative h-14 w-14 rounded-lg overflow-hidden border-2 transition-all block ${
+                            isActive ? "border-primary ring-2 ring-primary/30 scale-105" : "border-border opacity-70 hover:opacity-100"
+                          }`}
+                          aria-label={`Foto ${i + 1}`}
+                        >
+                          {p.isVideo && p.thumbnailDataUrl ? (
+                            <img src={p.thumbnailDataUrl} alt="" className="h-full w-full object-cover" />
+                          ) : p.isVideo ? (
+                            <div className="h-full w-full bg-muted flex items-center justify-center">
+                              <Video className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          ) : (
+                            <img src={p.previewUrl} alt="" className="h-full w-full object-cover" />
+                          )}
+                          <span className="absolute top-0.5 left-0.5 text-[10px] leading-none px-1 py-0.5 rounded bg-black/60 text-white font-medium">
+                            {i + 1}
+                          </span>
+                          {ready && (
+                            <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                              <Check className="h-2.5 w-2.5" />
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removePendingUpload(i); }}
+                          className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md hover:scale-110 transition-transform z-10"
+                          aria-label={`Remover foto ${i + 1}`}
+                          title="Remover esta foto"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {pendingUploads[previewIndex] && (
               <div className="space-y-4">
                 {pendingUploads[previewIndex].isVideo ? (
@@ -1097,131 +1493,62 @@ const Gallery = () => {
                     }}
                   />
                 )}
-                <p className="text-xs text-muted-foreground text-center">
-                  {pendingUploads[previewIndex].file.name}
-                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-xs text-muted-foreground truncate">
+                    {pendingUploads[previewIndex].file.name}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full gap-1 shrink-0"
+                    onClick={() => removePendingUpload(previewIndex)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span className="text-xs">Remover</span>
+                  </Button>
+                </div>
               </div>
             )}
-            <DialogFooter className="flex gap-2 sm:gap-2">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2 pt-2">
               {pendingUploads.length > 1 && (
-                <div className="flex gap-2 mr-auto">
+                <div className="flex gap-2 sm:mr-auto">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full"
+                    className="rounded-full flex-1 sm:flex-none"
                     disabled={previewIndex === 0}
                     onClick={() => setPreviewIndex(i => i - 1)}
                   >
-                    <ArrowLeft className="h-4 w-4 mr-1" /> Anterior
+                    <ArrowLeft className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Anterior</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full"
+                    className="rounded-full flex-1 sm:flex-none"
                     disabled={previewIndex === pendingUploads.length - 1}
                     onClick={() => setPreviewIndex(i => i + 1)}
                   >
-                    Próxima <ArrowRight className="h-4 w-4 ml-1" />
+                    <span className="hidden sm:inline">Próxima</span>
+                    <ArrowRight className="h-4 w-4 sm:ml-1" />
                   </Button>
                 </div>
               )}
-              <Button variant="ghost" onClick={cancelUploadPreviews} className="rounded-full">
-                Cancelar
-              </Button>
-              <Button onClick={confirmUploadPreviews} className="rounded-full">
-                <Upload className="h-4 w-4 mr-1" />
-                Enviar {pendingUploads.length > 1 ? `${pendingUploads.length} arquivo(s)` : pendingUploads[0]?.isVideo ? "vídeo" : "foto"}
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button variant="ghost" onClick={cancelUploadPreviews} className="rounded-full flex-1 sm:flex-none">
+                  Cancelar
+                </Button>
+                <Button onClick={confirmUploadPreviews} className="rounded-full flex-1 sm:flex-none">
+                  <Upload className="h-4 w-4 mr-1" />
+                  Enviar {pendingUploads.length > 1 ? `${pendingUploads.length} arquivos` : pendingUploads[0]?.isVideo ? "vídeo" : "foto"}
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* ===== DESTAQUES DA HOME (reorder) ===== */}
-        {(() => {
-          const destaques = fotos.filter(f => f.destaque_home).sort((a, b) => a.ordem - b.ordem);
-          if (destaques.length === 0) return null;
-
-          const swapOrdem = async (idx: number, direction: "up" | "down") => {
-            const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-            if (swapIdx < 0 || swapIdx >= destaques.length || !ensureWriteEnabled()) return;
-            const a = destaques[idx];
-            const b2 = destaques[swapIdx];
-            try {
-              await Promise.all([
-                galleryAdmin({ action: "update-photo", id: a.id, updates: { ordem: b2.ordem } }),
-                galleryAdmin({ action: "update-photo", id: b2.id, updates: { ordem: a.ordem } }),
-              ]);
-              toast.success("Ordem atualizada");
-              await loadData();
-            } catch (error) {
-              handleActionError(error, "Erro ao reordenar destaques.");
-            }
-          };
-
-          return (
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Pin className="h-4 w-4 text-primary" />
-                <span className="text-sm font-semibold text-primary uppercase tracking-wider">Destaques da Home</span>
-                <span className="text-xs text-muted-foreground">({destaques.length} itens — arraste para reordenar)</span>
-              </div>
-              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
-                {destaques.map((item, idx) => {
-                  const isVideo = getFotoTipo(item.url_foto) === "video";
-                  return (
-                    <div key={item.id} className="shrink-0 w-32 rounded-xl border-2 border-primary/30 bg-card overflow-hidden relative">
-                      {/* Position number */}
-                      <div className="absolute top-1 left-1 z-10 h-5 w-5 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
-                        {idx + 1}
-                      </div>
-                      {/* Type badge */}
-                      {isVideo && (
-                        <div className="absolute top-1 right-1 z-10">
-                          <span className="bg-blue-600 text-white text-[9px] px-1 py-0.5 rounded flex items-center gap-0.5">
-                            <Play className="h-2 w-2" /> Vídeo
-                          </span>
-                        </div>
-                      )}
-                      {/* Thumbnail */}
-                      {isVideo ? (
-                        <video src={item.url_foto} className="w-full aspect-[3/4] object-contain bg-muted" muted preload="none" poster={decodeThumbnail(item.legenda) || undefined} />
-                      ) : (
-                        <img src={item.url_foto} alt={item.titulo} className="w-full aspect-[3/4] object-contain bg-muted" />
-                      )}
-                      {/* Reorder + unpin controls */}
-                      <div className="flex items-center justify-between p-1.5 gap-0.5">
-                        <button
-                          onClick={() => swapOrdem(idx, "up")}
-                          disabled={idx === 0}
-                          className="h-6 w-6 flex items-center justify-center rounded bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
-                          title="Mover para esquerda"
-                        >
-                          <ArrowLeft className="h-3 w-3" />
-                        </button>
-                        <p className="text-[9px] font-medium truncate flex-1 text-center">{item.titulo}</p>
-                        <button
-                          onClick={() => swapOrdem(idx, "down")}
-                          disabled={idx === destaques.length - 1}
-                          className="h-6 w-6 flex items-center justify-center rounded bg-accent hover:bg-accent/80 disabled:opacity-30 transition-colors"
-                          title="Mover para direita"
-                        >
-                          <ArrowRight className="h-3 w-3" />
-                        </button>
-                        <button
-                          onClick={() => toggleDestaqueHome(item.id, true)}
-                          className="h-6 w-6 flex items-center justify-center rounded bg-destructive/10 hover:bg-destructive hover:text-destructive-foreground transition-colors ml-0.5"
-                          title="Remover da home"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
+        {/* Destaques da home removidos — apenas pastas fixadas aparecem na home */}
 
         {/* ===== MEDIA GRID ===== */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
@@ -1250,11 +1577,6 @@ const Gallery = () => {
                   {isVideo && (
                     <span className="bg-blue-600 text-white text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
                       <Play className="h-2.5 w-2.5" /> Vídeo
-                    </span>
-                  )}
-                  {foto.destaque_home && (
-                    <span className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                      <Pin className="h-2.5 w-2.5" /> Home
                     </span>
                   )}
                   {!foto.visivel && (
@@ -1348,14 +1670,24 @@ const Gallery = () => {
                         {foto.visivel ? <Eye className="h-3 w-3 text-primary" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
                       </button>
 
-                      <button
-                        onClick={() => toggleDestaqueHome(foto.id, !!foto.destaque_home)}
-                        className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
-                          foto.destaque_home ? "bg-primary text-primary-foreground" : "bg-accent hover:bg-accent/80"
-                        }`}
-                      >
-                        <Pin className="h-3 w-3" />
-                      </button>
+                      {foto.album_id && !getFotoTipo(foto.url_foto).includes("video") && (() => {
+                        const isCover = albuns.find(a => a.id === foto.album_id)?.capa_url === foto.url_foto;
+                        return (
+                          <button
+                            onClick={() => setAlbumCover(foto.album_id!, foto.url_foto)}
+                            className={`flex h-7 items-center gap-1 px-1.5 rounded-lg text-[10px] font-medium transition-colors ${
+                              isCover
+                                ? "bg-primary text-primary-foreground ring-2 ring-primary/30"
+                                : "bg-accent hover:bg-accent/80"
+                            }`}
+                            title={isCover ? "✅ Capa atual da pasta" : "Definir como capa da pasta"}
+                          >
+                            <Camera className="h-3 w-3" />
+                            {isCover && <span>Capa</span>}
+                          </button>
+                        );
+                      })()}
+
 
                       <button
                         className="flex h-7 w-7 items-center justify-center rounded-lg bg-accent hover:bg-destructive hover:text-destructive-foreground transition-colors ml-auto"

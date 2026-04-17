@@ -3,7 +3,9 @@ import { Link, useLocation } from "react-router-dom";
 import { Menu, X, Instagram, Facebook, MessageCircle } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useGaleriaConfig } from "@/hooks/useGaleriaConfig";
+import { useAgendaConfig } from "@/hooks/useAgendaConfig";
 import logoHeader from "@/assets/logo-sarelli-header.png";
+import logoNovo from "@/assets/logo-novo-partido.png";
 
 const baseNavItems = [
   { label: "Sobre", path: "/sobre" },
@@ -23,17 +25,22 @@ const socialLinks = [
 const Header = () => {
   const [open, setOpen] = useState(false);
   const { galeriaAtiva } = useGaleriaConfig();
+  const { agendaAtiva } = useAgendaConfig();
   const { pathname } = useLocation();
 
-  const navItems = galeriaAtiva
-    ? baseNavItems
-    : baseNavItems.filter((item) => item.path !== "/galeria");
+  const navItems = baseNavItems.filter((item) => {
+    if (!galeriaAtiva && item.path === "/galeria") return false;
+    if (!agendaAtiva && item.path === "/agenda") return false;
+    return true;
+  });
 
   return (
     <header className="sticky top-0 z-50 bg-background border-b border-border/50">
-      <div className="container flex h-[5rem] items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <img src={logoHeader} alt="Dra. Fernanda Sarelli" className="h-[6.5rem] w-auto object-contain" />
+      <div className="container flex h-20 items-center justify-between">
+        <Link to="/" className="flex items-center gap-2 sm:gap-3">
+          <img src={logoHeader} alt="Dra. Fernanda Sarelli" className="h-14 sm:h-16 lg:h-20 w-auto object-contain" />
+          <div className="h-8 sm:h-9 lg:h-10 w-px bg-muted-foreground/30" />
+          <img src={logoNovo} alt="Partido NOVO" className="h-12 sm:h-14 lg:h-16 xl:h-[72px] w-auto max-w-[120px] sm:max-w-[140px] lg:max-w-[160px] xl:max-w-[180px] object-contain" />
         </Link>
 
         {/* Social icons + Nav desktop */}

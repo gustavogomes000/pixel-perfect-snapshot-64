@@ -23,6 +23,7 @@ export interface CalendarEvent {
 interface UseGoogleCalendarOptions {
   filter?: "proximos" | "passados" | "all";
   limit?: number;
+  enabled?: boolean;
 }
 
 const CACHE_KEY = "agenda_events_cache";
@@ -106,6 +107,7 @@ export function useGoogleCalendar(options: UseGoogleCalendarOptions = {}) {
   }, [options.filter, options.limit]);
 
   useEffect(() => {
+    if (options.enabled === false) { setLoading(false); return; }
     if (fetchedRef.current) return;
     fetchedRef.current = true;
 

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
-import { Key, UserPlus, Trash2, RefreshCw, Copy, Pencil, KeyRound, LogOut } from "lucide-react";
+import { Key, UserPlus, Trash2, RefreshCw, Copy, Pencil, KeyRound, LogOut, Calendar, Image as ImageIcon } from "lucide-react";
 import { supabase } from "@/lib/supabaseDb";
 import { useAdmin, painelLogout } from "@/hooks/useAdmin";
 import AdminLayout from "@/components/admin/AdminLayout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 import {
   Dialog,
@@ -15,6 +16,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useNavigate } from "react-router-dom";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "@/lib/supabaseDb";
+import { invalidateSiteConfig } from "@/hooks/useSiteConfig";
 
 const PAINEL_AUTH_URL = `${SUPABASE_URL}/functions/v1/painel-auth`;
 
@@ -39,6 +41,8 @@ const SettingsPage = () => {
   useAdmin();
   const navigate = useNavigate();
   const [apiToken, setApiToken] = useState("");
+  const [agendaAtiva, setAgendaAtiva] = useState(true);
+  const [galeriaAtiva, setGaleriaAtiva] = useState(true);
   const [users, setUsers] = useState<PainelUser[]>([]);
   const [newUsername, setNewUsername] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -55,8 +59,17 @@ const SettingsPage = () => {
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
-    const { data: tokenData } = await supabase.from("configuracoes" as any).select("valor").eq("chave", "api_token").single();
+    const { data: tokenData } = await supabase.from("configuracoes" as any).select("valor").eq("chave", "api_token").maybeSingle();
     if (tokenData) setApiToken((tokenData as any).valor || "");
+
+    const { data: cfgRows } = await supabase
+      .from("configuracoes" as any)
+      .select("chave, valor")
+      .in("chave", ["agenda_ativa", "galeria_ativa"]);
+    const map: Record<string, string> = {};
+    for (const r of (cfgRows as any[]) || []) map[r.chave] = r.valor;
+    setAgendaAtiva(String(map.agenda_ativa ?? "true").toLowerCase() === "true");
+    setGaleriaAtiva(String(map.galeria_ativa ?? "true").toLowerCase() === "true");
 
     try {
       const data = await painelApi({ action: "list" });
@@ -64,6 +77,28 @@ const SettingsPage = () => {
     } catch {
       console.error("Erro ao carregar usuários");
     }
+  };
+
+  const saveConfig = async (chave: string, valor: boolean) => {
+    const data = await painelApi({ action: "set-config", chave, valor });
+    if (data?.error) throw new Error(data.error);
+    invalidateSiteConfig();
+  };
+
+  const toggleAgenda = async (checked: boolean) => {
+    setAgendaAtiva(checked);
+    try {
+      await saveConfig("agenda_ativa", checked);
+      toast.success(checked ? "Agenda ativada no site" : "Agenda desativada no site");
+    } catch { toast.error("Erro ao salvar"); setAgendaAtiva(!checked); }
+  };
+
+  const toggleGaleria = async (checked: boolean) => {
+    setGaleriaAtiva(checked);
+    try {
+      await saveConfig("galeria_ativa", checked);
+      toast.success(checked ? "Galeria ativada no site" : "Galeria desativada no site");
+    } catch { toast.error("Erro ao salvar"); setGaleriaAtiva(!checked); }
   };
 
   const regenerateToken = async () => {
@@ -143,7 +178,31 @@ const SettingsPage = () => {
           <h2 className="text-lg sm:text-xl font-bold">Configurações</h2>
         </div>
 
-        {/* API Token */}
+        {/* Visibilidade do site */}
+        <div className="rounded-2xl border bg-card p-4 space-y-4">
+          <h3 className="font-semibold text-sm">Visibilidade no site</h3>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <Calendar className="h-4 w-4 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Agenda</p>
+                <p className="text-[11px] text-muted-foreground">Mostra/oculta a Agenda no menu, home e rota /agenda.</p>
+              </div>
+            </div>
+            <Switch checked={agendaAtiva} onCheckedChange={toggleAgenda} />
+          </div>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 min-w-0">
+              <ImageIcon className="h-4 w-4 text-primary shrink-0" />
+              <div className="min-w-0">
+                <p className="text-sm font-medium">Galeria</p>
+                <p className="text-[11px] text-muted-foreground">Mostra/oculta a Galeria no menu e na home.</p>
+              </div>
+            </div>
+            <Switch checked={galeriaAtiva} onCheckedChange={toggleGaleria} />
+          </div>
+        </div>
+
         <div className="rounded-2xl border bg-card p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Key className="h-4 w-4 text-primary" />
