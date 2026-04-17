@@ -403,12 +403,13 @@ const GaleriaPublica = () => {
                   ) : (
                     <div className="w-full aspect-[3/4] bg-muted overflow-hidden">
                       <img
-                        src={foto.url_foto}
+                        src={decodeThumbnail(foto.legenda) || foto.url_foto}
                         alt={foto.titulo}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         style={getFocalStyle(foto.legenda)}
                         loading={i < 6 ? "eager" : "lazy"}
                         decoding="async"
+                        fetchPriority={i < 4 ? "high" : "auto"}
                       />
                     </div>
                   )}
@@ -513,6 +514,15 @@ const GaleriaPublica = () => {
               />
             ) : (
               <div className="relative w-full max-h-[78vh] flex items-center justify-center bg-black min-h-[200px]">
+                {/* LQIP placeholder — thumbnail aparece instantaneamente enquanto a foto full carrega */}
+                {!imgLoaded && decodeThumbnail(lightbox.legenda) && (
+                  <img
+                    src={decodeThumbnail(lightbox.legenda)!}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-contain blur-lg scale-105 opacity-70"
+                  />
+                )}
                 {!imgLoaded && (
                   <div className="absolute inset-0 flex items-center justify-center">
                     <Loader2 className="h-8 w-8 animate-spin text-white/60" />
@@ -521,9 +531,11 @@ const GaleriaPublica = () => {
                 <img
                   src={lightbox.url_foto}
                   alt={lightbox.titulo}
-                  className="max-w-full max-h-[78vh] object-contain"
+                  className="relative max-w-full max-h-[78vh] object-contain"
                   style={{ display: imgLoaded ? "block" : "none" }}
                   onLoad={() => setImgLoaded(true)}
+                  decoding="async"
+                  fetchPriority="high"
                 />
               </div>
             )}
