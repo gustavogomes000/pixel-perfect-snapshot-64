@@ -368,13 +368,13 @@ const Index = () => {
               <div className="absolute -inset-1.5 sm:-inset-2 rounded-[2rem] bg-primary/20 opacity-60 blur-lg -z-10" />
               {/* Moldura toda rosa, sem branco */}
               <div className="relative rounded-[1.75rem] overflow-hidden shadow-xl ring-2 ring-primary/70 outline outline-2 outline-primary/40 outline-offset-0">
-                {/* Foco no palco com letreiros NOVO/SARELLI, corta a plateia de baixo */}
-                <div className="relative w-full aspect-[16/10] sm:aspect-[16/8] lg:aspect-[16/7] overflow-hidden banner-reveal">
+                {/* Mobile: zoom maior focado nas pessoas no palco. Desktop: igual já estava */}
+                <div className="relative w-full aspect-[4/5] sm:aspect-[16/8] lg:aspect-[16/7] overflow-hidden banner-reveal">
                   <img
                     src={bannerPalanque}
                     alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
                     loading="lazy"
-                    className="absolute inset-0 w-full h-full object-cover object-[center_22%] scale-[1.05] transition-transform duration-700 sm:group-hover:scale-[1.1]"
+                    className="absolute inset-0 w-full h-full object-cover object-[center_32%] sm:object-[center_22%] scale-[1.9] sm:scale-[1.05] transition-transform duration-700 sm:group-hover:scale-[1.1]"
                   />
                 </div>
               </div>
