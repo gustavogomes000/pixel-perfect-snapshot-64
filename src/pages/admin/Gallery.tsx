@@ -207,8 +207,9 @@ const generateThumbnail = async (file: File, maxPx = 640, quality = 0.72): Promi
   } catch { decoded.cleanup(); return null; }
 };
 
-// Upload single file with retry (3 attempts, exponential backoff)
-const uploadWithRetry = async (signedUrl: string, file: File | Blob, contentType: string, maxAttempts = 3): Promise<Response> => {
+// Upload single file with retry (5 attempts, exponential backoff up to ~5s)
+// Survives flaky networks, mobile data drops, server hiccups.
+const uploadWithRetry = async (signedUrl: string, file: File | Blob, contentType: string, maxAttempts = 5): Promise<Response> => {
   let lastErr: unknown = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
@@ -227,10 +228,21 @@ const uploadWithRetry = async (signedUrl: string, file: File | Blob, contentType
       lastErr = err;
     }
     if (attempt < maxAttempts) {
-      await new Promise(r => setTimeout(r, 600 * attempt)); // 600ms, 1200ms
+      // 500ms, 1s, 2s, 4s
+      await new Promise(r => setTimeout(r, 500 * Math.pow(2, attempt - 1)));
     }
   }
-  throw lastErr instanceof Error ? lastErr : new Error("Upload failed");
+  throw lastErr instanceof Error ? lastErr : new Error("Upload falhou após várias tentativas");
+};
+
+// Safe wrapper: NEVER throws. Returns original file if compression fails (HEIC, corrupted, OOM, etc.)
+const compressImageSafe = async (file: File): Promise<File> => {
+  try {
+    const result = await compressImage(file);
+    return result || file;
+  } catch {
+    return file;
+  }
 };
 
 const WRITE_BLOCKED_MESSAGE = "Edições bloqueadas no painel: configure a service_role key correta do backend externo para liberar salvar, mover e apagar.";
@@ -577,11 +589,11 @@ const Gallery = () => {
     const toastId = `upload-${Date.now()}`;
     toast.loading(`Preparando ${items.length} arquivo(s)...`, { id: toastId });
 
-    // 1. Compress all images in parallel
+    // 1. Compress all images in parallel — NEVER fails (falls back to original on any error)
     const prepared = await Promise.all(
       items.map(async (item) => {
         const isVideo = isVideoFile(item.file);
-        const fileToUpload = isVideo ? item.file : await compressImage(item.file);
+        const fileToUpload = isVideo ? item.file : await compressImageSafe(item.file);
         return { ...item, fileToUpload, isVideo };
       })
     );
