@@ -1100,17 +1100,62 @@ const Gallery = () => {
 
         {/* Dialog prévia de upload com ponto focal / thumbnail de vídeo */}
         <Dialog open={showUploadPreview} onOpenChange={(open) => { if (!open) cancelUploadPreviews(); }}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>
-                {pendingUploads[previewIndex]?.isVideo ? "Selecionar capa do vídeo" : "Posicionar foto"} {previewIndex + 1} de {pendingUploads.length}
+          <DialogContent className="max-w-2xl w-[calc(100vw-1rem)] sm:w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6">
+            <DialogHeader className="space-y-1">
+              <DialogTitle className="text-base sm:text-lg pr-6">
+                {pendingUploads[previewIndex]?.isVideo ? "Selecionar capa do vídeo" : "Posicionar foto"}{" "}
+                <span className="text-muted-foreground font-normal">
+                  {previewIndex + 1} de {pendingUploads.length}
+                </span>
               </DialogTitle>
-              <DialogDescription>
+              <DialogDescription className="text-xs sm:text-sm">
                 {pendingUploads[previewIndex]?.isVideo
-                  ? "Arraste o vídeo até o frame desejado e clique em Capturar frame. Se não selecionar, será capturado automaticamente."
+                  ? "Arraste o vídeo até o frame desejado e clique em Capturar frame."
                   : "Toque na imagem para definir o ponto focal. As fotos serão exibidas inteiras, sem corte."}
               </DialogDescription>
             </DialogHeader>
+
+            {/* Tira de miniaturas para navegar rápido entre as fotos pendentes */}
+            {pendingUploads.length > 1 && (
+              <div className="-mx-4 sm:-mx-6 px-4 sm:px-6 overflow-x-auto pb-1">
+                <div className="flex gap-2 min-w-max">
+                  {pendingUploads.map((p, i) => {
+                    const isActive = i === previewIndex;
+                    const adjusted = !p.isVideo && (p.focalX !== 50 || p.focalY !== 50 || p.zoom !== 100);
+                    const ready = p.isVideo ? !!p.thumbnailDataUrl : adjusted;
+                    return (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setPreviewIndex(i)}
+                        className={`relative shrink-0 h-14 w-14 rounded-lg overflow-hidden border-2 transition-all ${
+                          isActive ? "border-primary ring-2 ring-primary/30 scale-105" : "border-border opacity-70 hover:opacity-100"
+                        }`}
+                        aria-label={`Foto ${i + 1}`}
+                      >
+                        {p.isVideo && p.thumbnailDataUrl ? (
+                          <img src={p.thumbnailDataUrl} alt="" className="h-full w-full object-cover" />
+                        ) : p.isVideo ? (
+                          <div className="h-full w-full bg-muted flex items-center justify-center">
+                            <Video className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                        ) : (
+                          <img src={p.previewUrl} alt="" className="h-full w-full object-cover" />
+                        )}
+                        <span className="absolute top-0.5 left-0.5 text-[10px] leading-none px-1 py-0.5 rounded bg-black/60 text-white font-medium">
+                          {i + 1}
+                        </span>
+                        {ready && (
+                          <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                            <Check className="h-2.5 w-2.5" />
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             {pendingUploads[previewIndex] && (
               <div className="space-y-4">
                 {pendingUploads[previewIndex].isVideo ? (
@@ -1181,36 +1226,40 @@ const Gallery = () => {
                 </p>
               </div>
             )}
-            <DialogFooter className="flex gap-2 sm:gap-2">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2 pt-2">
               {pendingUploads.length > 1 && (
-                <div className="flex gap-2 mr-auto">
+                <div className="flex gap-2 sm:mr-auto">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full"
+                    className="rounded-full flex-1 sm:flex-none"
                     disabled={previewIndex === 0}
                     onClick={() => setPreviewIndex(i => i - 1)}
                   >
-                    <ArrowLeft className="h-4 w-4 mr-1" /> Anterior
+                    <ArrowLeft className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Anterior</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full"
+                    className="rounded-full flex-1 sm:flex-none"
                     disabled={previewIndex === pendingUploads.length - 1}
                     onClick={() => setPreviewIndex(i => i + 1)}
                   >
-                    Próxima <ArrowRight className="h-4 w-4 ml-1" />
+                    <span className="hidden sm:inline">Próxima</span>
+                    <ArrowRight className="h-4 w-4 sm:ml-1" />
                   </Button>
                 </div>
               )}
-              <Button variant="ghost" onClick={cancelUploadPreviews} className="rounded-full">
-                Cancelar
-              </Button>
-              <Button onClick={confirmUploadPreviews} className="rounded-full">
-                <Upload className="h-4 w-4 mr-1" />
-                Enviar {pendingUploads.length > 1 ? `${pendingUploads.length} arquivo(s)` : pendingUploads[0]?.isVideo ? "vídeo" : "foto"}
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button variant="ghost" onClick={cancelUploadPreviews} className="rounded-full flex-1 sm:flex-none">
+                  Cancelar
+                </Button>
+                <Button onClick={confirmUploadPreviews} className="rounded-full flex-1 sm:flex-none">
+                  <Upload className="h-4 w-4 mr-1" />
+                  Enviar {pendingUploads.length > 1 ? `${pendingUploads.length} arquivos` : pendingUploads[0]?.isVideo ? "vídeo" : "foto"}
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
