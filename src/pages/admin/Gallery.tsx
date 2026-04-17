@@ -1347,33 +1347,43 @@ const Gallery = () => {
                     const adjusted = !p.isVideo && (p.focalX !== 50 || p.focalY !== 50 || p.zoom !== 100);
                     const ready = p.isVideo ? !!p.thumbnailDataUrl : adjusted;
                     return (
-                      <button
-                        key={i}
-                        type="button"
-                        onClick={() => setPreviewIndex(i)}
-                        className={`relative shrink-0 h-14 w-14 rounded-lg overflow-hidden border-2 transition-all ${
-                          isActive ? "border-primary ring-2 ring-primary/30 scale-105" : "border-border opacity-70 hover:opacity-100"
-                        }`}
-                        aria-label={`Foto ${i + 1}`}
-                      >
-                        {p.isVideo && p.thumbnailDataUrl ? (
-                          <img src={p.thumbnailDataUrl} alt="" className="h-full w-full object-cover" />
-                        ) : p.isVideo ? (
-                          <div className="h-full w-full bg-muted flex items-center justify-center">
-                            <Video className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                        ) : (
-                          <img src={p.previewUrl} alt="" className="h-full w-full object-cover" />
-                        )}
-                        <span className="absolute top-0.5 left-0.5 text-[10px] leading-none px-1 py-0.5 rounded bg-black/60 text-white font-medium">
-                          {i + 1}
-                        </span>
-                        {ready && (
-                          <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
-                            <Check className="h-2.5 w-2.5" />
+                      <div key={i} className="relative shrink-0 group">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewIndex(i)}
+                          className={`relative h-14 w-14 rounded-lg overflow-hidden border-2 transition-all block ${
+                            isActive ? "border-primary ring-2 ring-primary/30 scale-105" : "border-border opacity-70 hover:opacity-100"
+                          }`}
+                          aria-label={`Foto ${i + 1}`}
+                        >
+                          {p.isVideo && p.thumbnailDataUrl ? (
+                            <img src={p.thumbnailDataUrl} alt="" className="h-full w-full object-cover" />
+                          ) : p.isVideo ? (
+                            <div className="h-full w-full bg-muted flex items-center justify-center">
+                              <Video className="h-5 w-5 text-muted-foreground" />
+                            </div>
+                          ) : (
+                            <img src={p.previewUrl} alt="" className="h-full w-full object-cover" />
+                          )}
+                          <span className="absolute top-0.5 left-0.5 text-[10px] leading-none px-1 py-0.5 rounded bg-black/60 text-white font-medium">
+                            {i + 1}
                           </span>
-                        )}
-                      </button>
+                          {ready && (
+                            <span className="absolute bottom-0.5 right-0.5 h-4 w-4 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                              <Check className="h-2.5 w-2.5" />
+                            </span>
+                          )}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); removePendingUpload(i); }}
+                          className="absolute -top-1.5 -right-1.5 h-5 w-5 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center shadow-md hover:scale-110 transition-transform z-10"
+                          aria-label={`Remover foto ${i + 1}`}
+                          title="Remover esta foto"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
                     );
                   })}
                 </div>
