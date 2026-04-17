@@ -185,6 +185,29 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    // ── SET CONFIG (visibility toggles) ──
+    if (action === "set-config") {
+      const { chave, valor } = body;
+      const ALLOWED = ["agenda_ativa", "galeria_ativa"];
+      if (!ALLOWED.includes(chave)) return json({ error: "chave inválida" });
+
+      const valorStr = String(valor);
+      const { data: existing } = await supabase
+        .from("configuracoes")
+        .select("id")
+        .eq("chave", chave)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase.from("configuracoes").update({ valor: valorStr }).eq("chave", chave);
+        if (error) return json({ error: error.message });
+      } else {
+        const { error } = await supabase.from("configuracoes").insert({ chave, valor: valorStr });
+        if (error) return json({ error: error.message });
+      }
+      return json({ success: true, chave, valor: valorStr });
+    }
+
     return json({ error: "Ação inválida" });
   } catch (err) {
     return json({ error: (err as Error).message });
