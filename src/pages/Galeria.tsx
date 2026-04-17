@@ -419,13 +419,14 @@ const GaleriaPublica = () => {
                   ) : (
                     <div className="w-full aspect-[3/4] bg-muted overflow-hidden">
                       <img
-                        src={foto.url_foto}
+                        src={decodeThumbnail(foto.legenda) || foto.url_foto}
                         alt={foto.titulo}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         style={getFocalStyle(foto.legenda)}
                         loading={i < 8 ? "eager" : "lazy"}
                         decoding="async"
                         fetchPriority={i < 4 ? "high" : "auto"}
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                       />
                     </div>
                   )}
