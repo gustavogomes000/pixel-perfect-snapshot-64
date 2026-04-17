@@ -607,35 +607,20 @@ const GaleriaPublica = () => {
               />
             ) : (
               <>
-                {(() => {
-                  const thumb = decodeThumbnail(lightbox.legenda);
-                  return (
-                    <>
-                      {thumb && !imgLoaded && (
-                        <img
-                          src={thumb}
-                          alt=""
-                          aria-hidden="true"
-                          className="absolute max-w-full max-h-full w-auto h-auto object-contain"
-                        />
-                      )}
-                      {!imgLoaded && (
-                        <div className="absolute z-10">
-                          <Loader2 className="h-8 w-8 animate-spin text-white/70" />
-                        </div>
-                      )}
-                      <img
-                        src={lightbox.url_foto}
-                        alt={lightbox.titulo}
-                        className="relative max-w-full max-h-full w-auto h-auto object-contain"
-                        style={{ opacity: imgLoaded ? 1 : (thumb ? 0 : 1), transition: "opacity 200ms ease-out" }}
-                        onLoad={() => setImgLoaded(true)}
-                        decoding="async"
-                        fetchPriority="high"
-                      />
-                    </>
-                  );
-                })()}
+                {!imgLoaded && (
+                  <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+                    <Loader2 className="h-8 w-8 animate-spin text-white/70" />
+                  </div>
+                )}
+                <img
+                  src={lightbox.url_foto}
+                  alt={lightbox.titulo}
+                  className="max-w-full max-h-full w-auto h-auto object-contain"
+                  onLoad={() => setImgLoaded(true)}
+                  onError={() => setImgLoaded(true)}
+                  decoding="async"
+                  fetchPriority="high"
+                />
               </>
             )}
           </div>
