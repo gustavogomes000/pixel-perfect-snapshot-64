@@ -13,6 +13,7 @@ import ScrollReveal from "@/components/ScrollReveal";
 import logoSarelli from "@/assets/logo-sarelli.png";
 import logoNovo from "@/assets/logo-novo-partido.png";
 import bannerPalanque from "@/assets/banner-palanque.jpg";
+import bannerPalanqueMobile from "@/assets/banner-palanque-mobile.jpg";
 
 const PHOTO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
