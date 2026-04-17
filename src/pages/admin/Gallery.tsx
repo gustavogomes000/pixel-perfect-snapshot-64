@@ -1454,9 +1454,21 @@ const Gallery = () => {
                     }}
                   />
                 )}
-                <p className="text-xs text-muted-foreground text-center">
-                  {pendingUploads[previewIndex].file.name}
-                </p>
+                <div className="flex items-center justify-center gap-2">
+                  <p className="text-xs text-muted-foreground truncate">
+                    {pendingUploads[previewIndex].file.name}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-destructive hover:text-destructive hover:bg-destructive/10 rounded-full gap-1 shrink-0"
+                    onClick={() => removePendingUpload(previewIndex)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    <span className="text-xs">Remover</span>
+                  </Button>
+                </div>
               </div>
             )}
             <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2 pt-2">
