@@ -363,17 +363,21 @@ const Index = () => {
             </div>
           </ScrollReveal>
           <ScrollReveal>
-            <div className="relative max-w-6xl mx-auto rounded-3xl overflow-hidden shadow-soft border bg-gradient-to-br from-primary/5 to-secondary">
-              {/* Aspect controlado + foco no palco — corta o público da frente sem cortar ninguém de cima */}
-              <div className="relative w-full aspect-[16/8] sm:aspect-[16/7]">
-                <img
-                  src={bannerPalanque}
-                  alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
-                  loading="lazy"
-                  className="absolute inset-0 w-full h-full object-cover object-[center_30%]"
-                />
+            <div className="relative max-w-6xl mx-auto group">
+              {/* Glow externo de destaque */}
+              <div className="absolute -inset-2 sm:-inset-3 rounded-[2rem] bg-gradient-to-br from-primary/30 via-primary/10 to-secondary opacity-70 blur-xl -z-10" />
+              {/* Moldura premium */}
+              <div className="relative rounded-[1.75rem] overflow-hidden shadow-2xl ring-1 ring-primary/20 bg-card p-1.5 sm:p-2">
+                <div className="relative w-full aspect-[4/5] sm:aspect-[16/8] lg:aspect-[16/7] overflow-hidden rounded-[1.4rem]">
+                  <img
+                    src={bannerPalanque}
+                    alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
+                    loading="lazy"
+                    className="absolute inset-0 w-full h-full object-cover object-[center_38%] sm:object-[center_30%] scale-[1.35] sm:scale-100 transition-transform duration-700 group-hover:scale-[1.05]"
+                  />
+                  <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-background/50 via-background/10 to-transparent" />
+                </div>
               </div>
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-background/30 to-transparent" />
             </div>
           </ScrollReveal>
         </div>
