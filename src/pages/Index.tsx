@@ -365,12 +365,12 @@ const Index = () => {
           </ScrollReveal>
           <ScrollReveal>
             <div className="relative max-w-6xl mx-auto group">
-              {/* Glow rosa suave */}
-              <div className="absolute -inset-1.5 sm:-inset-2 rounded-[2rem] bg-primary/20 opacity-60 blur-lg -z-10" />
-              {/* Moldura toda rosa, sem branco */}
-              <div className="relative rounded-[1.75rem] overflow-hidden shadow-xl ring-2 ring-primary/70 outline outline-2 outline-primary/40 outline-offset-0">
-                {/* Aspect natural da foto, sem cortes nem sobras em nenhum tamanho */}
-                <div className="relative w-full overflow-hidden banner-reveal" style={{ aspectRatio: "3936 / 1243" }}>
+              {/* Glow rosa externo */}
+              <div className="absolute -inset-2 sm:-inset-3 rounded-[2rem] bg-primary/25 opacity-70 blur-xl -z-10" />
+              {/* Moldura branca com borda rosa */}
+              <div className="relative rounded-[1.5rem] bg-card p-1.5 sm:p-2 shadow-2xl ring-2 ring-primary ring-offset-2 ring-offset-background">
+                {/* Aspect natural da foto, sem cortes nem sobras em qualquer tela */}
+                <div className="relative w-full overflow-hidden rounded-[1rem] banner-reveal" style={{ aspectRatio: "3936 / 1243" }}>
                   <img
                     src={bannerPalanqueMobile}
                     alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
