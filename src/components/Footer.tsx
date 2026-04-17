@@ -1,7 +1,10 @@
 import { Link } from "react-router-dom";
 import { Instagram, Facebook, MessageCircle, Heart } from "lucide-react";
+import { useAgendaConfig } from "@/hooks/useAgendaConfig";
 
-const Footer = () => (
+const Footer = () => {
+  const { agendaAtiva } = useAgendaConfig();
+  return (
   <footer className="bg-footer text-footer-foreground">
     <div className="container py-12">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -17,7 +20,7 @@ const Footer = () => (
           <nav className="flex flex-col gap-2 text-sm">
             <Link to="/" className="hover:text-primary-foreground transition-colors">Início</Link>
             <Link to="/sobre" className="hover:text-primary-foreground transition-colors">Sobre</Link>
-            <Link to="/agenda" className="hover:text-primary-foreground transition-colors">Agenda</Link>
+            {agendaAtiva && <Link to="/agenda" className="hover:text-primary-foreground transition-colors">Agenda</Link>}
             <Link to="/contato" className="hover:text-primary-foreground transition-colors">Contato</Link>
           </nav>
         </div>
@@ -60,6 +63,7 @@ const Footer = () => (
       </div>
     </div>
   </footer>
-);
+  );
+};
 
 export default Footer;
