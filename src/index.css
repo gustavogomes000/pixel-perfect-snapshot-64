@@ -141,3 +141,14 @@ html {
 * {
   -webkit-tap-highlight-color: transparent;
 }
+
+/* Banner reveal — imagem se descobre de baixo pra cima conforme entra no viewport */
+@keyframes banner-unveil {
+  0% { clip-path: inset(0 0 100% 0); filter: brightness(0.85) saturate(1.1); }
+  60% { filter: brightness(0.95) saturate(1.05); }
+  100% { clip-path: inset(0 0 0 0); filter: brightness(1) saturate(1); }
+}
+.banner-reveal { animation: banner-unveil 1.6s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@media (prefers-reduced-motion: reduce) {
+  .banner-reveal { animation: none; }
+}
