@@ -72,7 +72,7 @@ const isVideoUrl = (url: string) => {
   return VIDEO_EXTENSIONS.some(ext => lower.includes(ext));
 };
 
-// Detect WebP encoding support (most modern browsers including iOS 14+)
+// Detect WebP encoding support
 let _webpSupported: boolean | null = null;
 const supportsWebP = (): Promise<boolean> => {
   if (_webpSupported !== null) return Promise.resolve(_webpSupported);
@@ -87,52 +87,108 @@ const supportsWebP = (): Promise<boolean> => {
 };
 
 /**
- * Conservative compression: max 2048px on longest side, JPEG quality 0.88 (or WebP 0.82).
- * - Skips files already small (<400KB)
- * - Tries WebP first (smaller), falls back to JPEG
- * - Reduces typical 5MB phone photo to ~600-900KB without visible loss
+ * Decode an image safely — handles HUGE camera files (20-50MB, 8000×6000+) on iOS/Safari
+ * by using createImageBitmap when available (off-thread, no memory blow-up),
+ * falling back to <img> for older browsers.
  */
-const compressImage = async (file: File, maxPx = 2048, jpegQuality = 0.88, webpQuality = 0.82): Promise<File> => {
-  if (!file.type.startsWith("image/") || file.size < 400 * 1024) return file;
-
-  const useWebp = await supportsWebP();
+const decodeImageSafe = async (file: File): Promise<{ bitmap: ImageBitmap | HTMLImageElement; width: number; height: number; cleanup: () => void }> => {
+  // Modern path: createImageBitmap respects EXIF orientation, decodes off-thread, handles huge files
+  if (typeof createImageBitmap === "function") {
+    try {
+      const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" } as ImageBitmapOptions);
+      return { bitmap, width: bitmap.width, height: bitmap.height, cleanup: () => bitmap.close?.() };
+    } catch {
+      // Fall through to <img> fallback
+    }
+  }
+  // Fallback: <img> + object URL (works on older Safari but uses more RAM)
   const blobUrl = URL.createObjectURL(file);
-
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const img = new Image();
-    img.onload = () => {
-      URL.revokeObjectURL(blobUrl);
-      let { width, height } = img;
-      const longest = Math.max(width, height);
-      if (longest > maxPx) {
-        const ratio = maxPx / longest;
-        width = Math.round(width * ratio);
-        height = Math.round(height * ratio);
-      }
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext("2d", { alpha: false });
-      if (!ctx) { resolve(file); return; }
-      ctx.imageSmoothingEnabled = true;
-      ctx.imageSmoothingQuality = "high";
-      ctx.drawImage(img, 0, 0, width, height);
+    img.onload = () => resolve({ bitmap: img, width: img.naturalWidth, height: img.naturalHeight, cleanup: () => URL.revokeObjectURL(blobUrl) });
+    img.onerror = () => { URL.revokeObjectURL(blobUrl); reject(new Error("decode failed")); };
+    img.src = blobUrl;
+  });
+};
 
-      const mimeType = useWebp ? "image/webp" : "image/jpeg";
-      const quality = useWebp ? webpQuality : jpegQuality;
-      const ext = useWebp ? ".webp" : ".jpg";
+/**
+ * Aggressive-yet-safe compression for ANY camera (phone or DSLR).
+ * - Max 1920px longest side (Full HD — perfeito pra web, invisível ao olho)
+ * - Quality WebP 0.78 (≈75% menor) ou JPEG 0.82 (≈60% menor)
+ * - Multi-step downscale para fotos enormes (evita aliasing e crash de memória)
+ * - Skips files already small (<300KB)
+ * - Foto típica: DSLR 25MB → ~250-400KB · Celular 5MB → ~200-350KB
+ */
+const compressImage = async (file: File, maxPx = 1920, jpegQuality = 0.82, webpQuality = 0.78): Promise<File> => {
+  if (!file.type.startsWith("image/") || file.size < 300 * 1024) return file;
 
+  let decoded;
+  try {
+    decoded = await decodeImageSafe(file);
+  } catch {
+    return file; // can't decode — keep original
+  }
+
+  try {
+    const { bitmap, cleanup } = decoded;
+    let { width, height } = decoded;
+    const longest = Math.max(width, height);
+
+    // Compute final size
+    let finalW = width, finalH = height;
+    if (longest > maxPx) {
+      const ratio = maxPx / longest;
+      finalW = Math.round(width * ratio);
+      finalH = Math.round(height * ratio);
+    }
+
+    // Multi-step downscale for huge images (>4× target) — better quality + lower peak memory
+    let currentSrc: ImageBitmap | HTMLImageElement | HTMLCanvasElement = bitmap;
+    let currentW = width, currentH = height;
+    while (currentW > finalW * 2 && currentH > finalH * 2) {
+      const nextW = Math.max(finalW, Math.round(currentW / 2));
+      const nextH = Math.max(finalH, Math.round(currentH / 2));
+      const stepCanvas = document.createElement("canvas");
+      stepCanvas.width = nextW;
+      stepCanvas.height = nextH;
+      const stepCtx = stepCanvas.getContext("2d", { alpha: false });
+      if (!stepCtx) break;
+      stepCtx.imageSmoothingEnabled = true;
+      stepCtx.imageSmoothingQuality = "high";
+      stepCtx.drawImage(currentSrc as CanvasImageSource, 0, 0, nextW, nextH);
+      currentSrc = stepCanvas;
+      currentW = nextW;
+      currentH = nextH;
+    }
+
+    // Final draw
+    const canvas = document.createElement("canvas");
+    canvas.width = finalW;
+    canvas.height = finalH;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) { cleanup(); return file; }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(currentSrc as CanvasImageSource, 0, 0, finalW, finalH);
+    cleanup();
+
+    const useWebp = await supportsWebP();
+    const mimeType = useWebp ? "image/webp" : "image/jpeg";
+    const quality = useWebp ? webpQuality : jpegQuality;
+    const ext = useWebp ? ".webp" : ".jpg";
+
+    return await new Promise<File>((resolve) => {
       canvas.toBlob((blob) => {
         if (!blob) { resolve(file); return; }
-        // If output is somehow larger than original (rare), keep original
         if (blob.size >= file.size) { resolve(file); return; }
         const outName = file.name.replace(/\.[^.]+$/, ext);
         resolve(new File([blob], outName, { type: mimeType }));
       }, mimeType, quality);
-    };
-    img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(file); };
-    img.src = blobUrl;
-  });
+    });
+  } catch {
+    decoded.cleanup();
+    return file;
+  }
 };
 
 // Upload single file with retry (3 attempts, exponential backoff)
