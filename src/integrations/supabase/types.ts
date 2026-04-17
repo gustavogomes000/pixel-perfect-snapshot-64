@@ -710,6 +710,39 @@ export type Database = {
         }
         Relationships: []
       }
+      cadastros_fernanda: {
+        Row: {
+          atualizado_em: string
+          cadastrado_por: string | null
+          cidade: string | null
+          criado_em: string
+          id: string
+          instagram: string | null
+          nome: string
+          telefone: string
+        }
+        Insert: {
+          atualizado_em?: string
+          cadastrado_por?: string | null
+          cidade?: string | null
+          criado_em?: string
+          id?: string
+          instagram?: string | null
+          nome: string
+          telefone: string
+        }
+        Update: {
+          atualizado_em?: string
+          cadastrado_por?: string | null
+          cidade?: string | null
+          criado_em?: string
+          id?: string
+          instagram?: string | null
+          nome?: string
+          telefone?: string
+        }
+        Relationships: []
+      }
       cliques_whatsapp: {
         Row: {
           bairro: string | null
@@ -2211,6 +2244,7 @@ export type Database = {
         | "suplente"
         | "lideranca"
         | "fiscal"
+        | "fernanda"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2345,6 +2379,7 @@ export const Constants = {
         "suplente",
         "lideranca",
         "fiscal",
+        "fernanda",
       ],
     },
   },
