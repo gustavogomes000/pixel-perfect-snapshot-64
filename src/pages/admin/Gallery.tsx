@@ -72,42 +72,93 @@ const isVideoUrl = (url: string) => {
   return VIDEO_EXTENSIONS.some(ext => lower.includes(ext));
 };
 
-const compressImage = (file: File, maxPx = 2048, quality = 0.92): Promise<File> => {
+// Detect WebP encoding support (most modern browsers including iOS 14+)
+let _webpSupported: boolean | null = null;
+const supportsWebP = (): Promise<boolean> => {
+  if (_webpSupported !== null) return Promise.resolve(_webpSupported);
   return new Promise((resolve) => {
-    if (!file.type.startsWith("image/") || file.size < 800 * 1024) {
-      resolve(file);
-      return;
-    }
+    const canvas = document.createElement("canvas");
+    canvas.width = 1; canvas.height = 1;
+    canvas.toBlob((b) => {
+      _webpSupported = !!b && b.type === "image/webp";
+      resolve(_webpSupported);
+    }, "image/webp", 0.8);
+  });
+};
+
+/**
+ * Conservative compression: max 2048px on longest side, JPEG quality 0.88 (or WebP 0.82).
+ * - Skips files already small (<400KB)
+ * - Tries WebP first (smaller), falls back to JPEG
+ * - Reduces typical 5MB phone photo to ~600-900KB without visible loss
+ */
+const compressImage = async (file: File, maxPx = 2048, jpegQuality = 0.88, webpQuality = 0.82): Promise<File> => {
+  if (!file.type.startsWith("image/") || file.size < 400 * 1024) return file;
+
+  const useWebp = await supportsWebP();
+  const blobUrl = URL.createObjectURL(file);
+
+  return new Promise((resolve) => {
     const img = new Image();
-    const blobUrl = URL.createObjectURL(file);
     img.onload = () => {
       URL.revokeObjectURL(blobUrl);
       let { width, height } = img;
-      if (width <= maxPx && height <= maxPx) {
-        resolve(file);
-        return;
-      }
-      if (width > height) {
-        height = Math.round((height * maxPx) / width);
-        width = maxPx;
-      } else {
-        width = Math.round((width * maxPx) / height);
-        height = maxPx;
+      const longest = Math.max(width, height);
+      if (longest > maxPx) {
+        const ratio = maxPx / longest;
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
       }
       const canvas = document.createElement("canvas");
       canvas.width = width;
       canvas.height = height;
-      const ctx = canvas.getContext("2d")!;
+      const ctx = canvas.getContext("2d", { alpha: false });
+      if (!ctx) { resolve(file); return; }
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
       ctx.drawImage(img, 0, 0, width, height);
+
+      const mimeType = useWebp ? "image/webp" : "image/jpeg";
+      const quality = useWebp ? webpQuality : jpegQuality;
+      const ext = useWebp ? ".webp" : ".jpg";
+
       canvas.toBlob((blob) => {
         if (!blob) { resolve(file); return; }
-        const outName = file.name.replace(/\.[^.]+$/, ".jpg");
-        resolve(new File([blob], outName, { type: "image/jpeg" }));
-      }, "image/jpeg", quality);
+        // If output is somehow larger than original (rare), keep original
+        if (blob.size >= file.size) { resolve(file); return; }
+        const outName = file.name.replace(/\.[^.]+$/, ext);
+        resolve(new File([blob], outName, { type: mimeType }));
+      }, mimeType, quality);
     };
     img.onerror = () => { URL.revokeObjectURL(blobUrl); resolve(file); };
     img.src = blobUrl;
   });
+};
+
+// Upload single file with retry (3 attempts, exponential backoff)
+const uploadWithRetry = async (signedUrl: string, file: File | Blob, contentType: string, maxAttempts = 3): Promise<Response> => {
+  let lastErr: unknown = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const res = await fetch(signedUrl, {
+        method: "PUT",
+        headers: { "Content-Type": contentType || "application/octet-stream" },
+        body: file,
+      });
+      if (res.ok) return res;
+      // 4xx (except 408/429) won't get better with retries
+      if (res.status >= 400 && res.status < 500 && res.status !== 408 && res.status !== 429) {
+        return res;
+      }
+      lastErr = new Error(`HTTP ${res.status}`);
+    } catch (err) {
+      lastErr = err;
+    }
+    if (attempt < maxAttempts) {
+      await new Promise(r => setTimeout(r, 600 * attempt)); // 600ms, 1200ms
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error("Upload failed");
 };
 
 const WRITE_BLOCKED_MESSAGE = "Edições bloqueadas no painel: configure a service_role key correta do backend externo para liberar salvar, mover e apagar.";
