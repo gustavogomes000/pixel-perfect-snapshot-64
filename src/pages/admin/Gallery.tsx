@@ -229,6 +229,8 @@ const Gallery = () => {
   const [writeEnabled, setWriteEnabled] = useState<boolean | null>(null);
   const [writeErrorMessage, setWriteErrorMessage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+  const galleryInputRef = useRef<HTMLInputElement>(null);
   const previewVideoRef = useRef<HTMLVideoElement>(null);
 
   const [pendingUploads, setPendingUploads] = useState<Array<{ file: File; previewUrl: string; focalX: number; focalY: number; zoom: number; isVideo?: boolean; thumbnailDataUrl?: string | null }>>([]);
