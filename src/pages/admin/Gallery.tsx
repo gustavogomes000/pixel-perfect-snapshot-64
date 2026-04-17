@@ -112,12 +112,12 @@ const decodeImageSafe = async (file: File): Promise<{ bitmap: ImageBitmap | HTML
 };
 
 /**
- * Smart compression — Full HD quality (perfect for viewing AND downloading).
- * - Max 1920px longest side · WebP 0.82 / JPEG 0.86
- * - DSLR 25MB → ~250-500KB · Celular 5MB → ~180-350KB
- * - Mesma qualidade para tela e download. Ocupa o mínimo no banco.
+ * High-fidelity compression — preserva nitidez total sem pixelização.
+ * - Max 2400px longest side · WebP 0.92 / JPEG 0.94
+ * - DSLR 25MB → ~600KB-1.4MB · Celular 5MB → ~400-800KB
+ * - Qualidade visualmente idêntica ao original em qualquer tela.
  */
-const compressImage = async (file: File, maxPx = 1920, jpegQuality = 0.86, webpQuality = 0.82): Promise<File> => {
+const compressImage = async (file: File, maxPx = 2400, jpegQuality = 0.94, webpQuality = 0.92): Promise<File> => {
   if (!file.type.startsWith("image/") || file.size < 200 * 1024) return file;
 
   let decoded;
