@@ -112,29 +112,21 @@ const decodeImageSafe = async (file: File): Promise<{ bitmap: ImageBitmap | HTML
 };
 
 /**
- * Aggressive-yet-safe compression for ANY camera (phone or DSLR).
- * - Max 1920px longest side (Full HD — perfeito pra web, invisível ao olho)
- * - Quality WebP 0.78 (≈75% menor) ou JPEG 0.82 (≈60% menor)
- * - Multi-step downscale para fotos enormes (evita aliasing e crash de memória)
- * - Skips files already small (<300KB)
- * - Foto típica: DSLR 25MB → ~250-400KB · Celular 5MB → ~200-350KB
+ * Aggressive compression — Google Photos style.
+ * - Max 1600px longest side, WebP 0.72 / JPEG 0.80
+ * - Foto típica: DSLR 25MB → ~180-300KB · Celular 5MB → ~150-250KB
  */
-const compressImage = async (file: File, maxPx = 1920, jpegQuality = 0.82, webpQuality = 0.78): Promise<File> => {
-  if (!file.type.startsWith("image/") || file.size < 300 * 1024) return file;
+const compressImage = async (file: File, maxPx = 1600, jpegQuality = 0.80, webpQuality = 0.72): Promise<File> => {
+  if (!file.type.startsWith("image/") || file.size < 200 * 1024) return file;
 
   let decoded;
-  try {
-    decoded = await decodeImageSafe(file);
-  } catch {
-    return file; // can't decode — keep original
-  }
+  try { decoded = await decodeImageSafe(file); } catch { return file; }
 
   try {
     const { bitmap, cleanup } = decoded;
-    let { width, height } = decoded;
+    const { width, height } = decoded;
     const longest = Math.max(width, height);
 
-    // Compute final size
     let finalW = width, finalH = height;
     if (longest > maxPx) {
       const ratio = maxPx / longest;
@@ -142,29 +134,24 @@ const compressImage = async (file: File, maxPx = 1920, jpegQuality = 0.82, webpQ
       finalH = Math.round(height * ratio);
     }
 
-    // Multi-step downscale for huge images (>4× target) — better quality + lower peak memory
     let currentSrc: ImageBitmap | HTMLImageElement | HTMLCanvasElement = bitmap;
     let currentW = width, currentH = height;
     while (currentW > finalW * 2 && currentH > finalH * 2) {
       const nextW = Math.max(finalW, Math.round(currentW / 2));
       const nextH = Math.max(finalH, Math.round(currentH / 2));
       const stepCanvas = document.createElement("canvas");
-      stepCanvas.width = nextW;
-      stepCanvas.height = nextH;
+      stepCanvas.width = nextW; stepCanvas.height = nextH;
       const stepCtx = stepCanvas.getContext("2d", { alpha: false });
       if (!stepCtx) break;
       stepCtx.imageSmoothingEnabled = true;
       stepCtx.imageSmoothingQuality = "high";
       stepCtx.drawImage(currentSrc as CanvasImageSource, 0, 0, nextW, nextH);
       currentSrc = stepCanvas;
-      currentW = nextW;
-      currentH = nextH;
+      currentW = nextW; currentH = nextH;
     }
 
-    // Final draw
     const canvas = document.createElement("canvas");
-    canvas.width = finalW;
-    canvas.height = finalH;
+    canvas.width = finalW; canvas.height = finalH;
     const ctx = canvas.getContext("2d", { alpha: false });
     if (!ctx) { cleanup(); return file; }
     ctx.imageSmoothingEnabled = true;
@@ -189,6 +176,34 @@ const compressImage = async (file: File, maxPx = 1920, jpegQuality = 0.82, webpQ
     decoded.cleanup();
     return file;
   }
+};
+
+/**
+ * Generate a small thumbnail (480px, WebP 0.55) — ~20-50KB.
+ * Used in grid for INSTANT loading + as LQIP placeholder in lightbox.
+ */
+const generateThumbnail = async (file: File, maxPx = 480, quality = 0.55): Promise<Blob | null> => {
+  if (!file.type.startsWith("image/")) return null;
+  let decoded;
+  try { decoded = await decodeImageSafe(file); } catch { return null; }
+  try {
+    const { bitmap, cleanup, width, height } = decoded;
+    const longest = Math.max(width, height);
+    const ratio = longest > maxPx ? maxPx / longest : 1;
+    const w = Math.round(width * ratio), h = Math.round(height * ratio);
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    const ctx = canvas.getContext("2d", { alpha: false });
+    if (!ctx) { cleanup(); return null; }
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = "high";
+    ctx.drawImage(bitmap as CanvasImageSource, 0, 0, w, h);
+    cleanup();
+    const useWebp = await supportsWebP();
+    return await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((b) => resolve(b), useWebp ? "image/webp" : "image/jpeg", quality);
+    });
+  } catch { decoded.cleanup(); return null; }
 };
 
 // Upload single file with retry (3 attempts, exponential backoff)
