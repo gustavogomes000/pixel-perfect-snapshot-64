@@ -418,11 +418,11 @@ const GaleriaPublica = () => {
                   ) : (
                     <div className="w-full aspect-[3/4] bg-muted overflow-hidden">
                       <img
-                        src={decodeThumbnail(foto.legenda) || foto.url_foto}
+                        src={foto.url_foto}
                         alt={foto.titulo}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         style={getFocalStyle(foto.legenda)}
-                        loading={i < 6 ? "eager" : "lazy"}
+                        loading={i < 8 ? "eager" : "lazy"}
                         decoding="async"
                         fetchPriority={i < 4 ? "high" : "auto"}
                       />
@@ -467,7 +467,7 @@ const GaleriaPublica = () => {
       {/* Lightbox */}
       {lightbox && (
         <div
-          className="fixed inset-0 z-50 bg-black/95 flex flex-col"
+          className="fixed inset-0 z-[100] bg-black flex flex-col"
           onClick={closeLightbox}
         >
           {/* Top bar — Counter + Close */}
