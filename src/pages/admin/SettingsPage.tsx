@@ -80,16 +80,21 @@ const SettingsPage = () => {
   };
 
   const saveConfig = async (chave: string, valor: boolean) => {
-    const { data: existing } = await supabase
-      .from("configuracoes" as any)
-      .select("id")
-      .eq("chave", chave)
-      .maybeSingle();
-    if (existing) {
-      await supabase.from("configuracoes" as any).update({ valor: String(valor) } as any).eq("chave", chave);
-    } else {
-      await supabase.from("configuracoes" as any).insert({ chave, valor: String(valor) } as any);
-    }
+    const { data: sess } = await supabase.auth.getSession();
+    const token = sess.session?.access_token;
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/site-config`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ chave, valor }),
+      }
+    );
+    if (!res.ok) throw new Error("save failed");
     invalidateSiteConfig();
   };
 
