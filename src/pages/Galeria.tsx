@@ -643,6 +643,7 @@ const GaleriaPublica = () => {
               </div>
             </div>
           </div>
+          </div>
         </div>
       )}
     </Layout>
