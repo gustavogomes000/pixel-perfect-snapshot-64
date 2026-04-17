@@ -467,14 +467,14 @@ const GaleriaPublica = () => {
       {/* Lightbox */}
       {lightbox && (
         <div
-          className="fixed inset-0 z-[100] bg-black"
+          className="fixed inset-0 z-[100] bg-black flex flex-col"
           onClick={closeLightbox}
           role="dialog"
           aria-modal="true"
         >
           {/* TOP BAR */}
           <div
-            className="absolute top-0 left-0 right-0 h-14 sm:h-16 flex items-center justify-between px-3 sm:px-5 bg-black/80 backdrop-blur-sm z-30"
+            className="flex-shrink-0 h-14 sm:h-16 flex items-center justify-between px-3 sm:px-5 bg-black/90"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="text-white/90 text-sm font-medium">
@@ -489,9 +489,57 @@ const GaleriaPublica = () => {
             </button>
           </div>
 
+          {/* MEDIA AREA */}
+          <div
+            className="flex-1 min-h-0 relative flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {getFotoTipo(lightbox.url_foto) === "video" ? (
+              <video
+                ref={videoRef}
+                src={lightbox.url_foto}
+                className="max-w-full max-h-full object-contain"
+                controls
+                autoPlay
+                playsInline
+                controlsList="nodownload"
+                onPlay={handleVideoPlay}
+                onPause={handleVideoPause}
+              />
+            ) : (
+              <img
+                src={lightbox.url_foto}
+                alt={lightbox.titulo}
+                className="max-w-full max-h-full object-contain"
+                decoding="async"
+                fetchPriority="high"
+              />
+            )}
+
+            {/* NAV */}
+            {hasPrev && (
+              <button
+                onClick={(e) => { e.stopPropagation(); navigateLightbox(-1); }}
+                className="absolute left-2 sm:left-5 top-1/2 -translate-y-1/2 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors"
+                aria-label="Anterior"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+            )}
+            {hasNext && (
+              <button
+                onClick={(e) => { e.stopPropagation(); navigateLightbox(1); }}
+                className="absolute right-2 sm:right-5 top-1/2 -translate-y-1/2 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors"
+                aria-label="Próxima"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            )}
+          </div>
+
           {/* BOTTOM BAR */}
           <div
-            className="absolute bottom-0 left-0 right-0 min-h-16 sm:min-h-20 flex items-center justify-between gap-3 px-3 sm:px-5 py-3 bg-black/80 backdrop-blur-sm z-30"
+            className="flex-shrink-0 flex items-center justify-between gap-3 px-3 sm:px-5 py-3 bg-black/90"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="min-w-0 flex-1">
@@ -564,65 +612,6 @@ const GaleriaPublica = () => {
                 <span className="hidden sm:inline">Compartilhar</span>
               </button>
             </div>
-          </div>
-
-          {/* NAV */}
-          {hasPrev && (
-            <button
-              onClick={(e) => { e.stopPropagation(); navigateLightbox(-1); }}
-              className="absolute left-2 sm:left-5 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors backdrop-blur-sm"
-              aria-label="Anterior"
-            >
-              <ChevronLeft className="h-6 w-6" />
-            </button>
-          )}
-          {hasNext && (
-            <button
-              onClick={(e) => { e.stopPropagation(); navigateLightbox(1); }}
-              className="absolute right-2 sm:right-5 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors backdrop-blur-sm"
-              aria-label="Próxima"
-            >
-              <ChevronRight className="h-6 w-6" />
-            </button>
-          )}
-
-          {/* MEDIA AREA — entre as barras, foto sempre INTEIRA */}
-          <div
-            className="absolute top-14 sm:top-16 bottom-16 sm:bottom-20 left-0 right-0 flex items-center justify-center px-2 sm:px-20"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {getFotoTipo(lightbox.url_foto) === "video" ? (
-              <video
-                ref={videoRef}
-                src={lightbox.url_foto}
-                className="max-w-full max-h-full w-auto h-auto object-contain"
-                controls
-                autoPlay
-                playsInline
-                controlsList="nodownload"
-                onPlay={handleVideoPlay}
-                onPause={handleVideoPause}
-                onLoadStart={() => setImgLoaded(false)}
-                onCanPlay={() => setImgLoaded(true)}
-              />
-            ) : (
-              <>
-                {!imgLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
-                    <Loader2 className="h-8 w-8 animate-spin text-white/70" />
-                  </div>
-                )}
-                <img
-                  src={lightbox.url_foto}
-                  alt={lightbox.titulo}
-                  className="max-w-full max-h-full w-auto h-auto object-contain"
-                  onLoad={() => setImgLoaded(true)}
-                  onError={() => setImgLoaded(true)}
-                  decoding="async"
-                  fetchPriority="high"
-                />
-              </>
-            )}
           </div>
         </div>
       )}
