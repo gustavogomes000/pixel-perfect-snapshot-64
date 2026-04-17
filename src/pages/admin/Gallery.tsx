@@ -948,13 +948,29 @@ const Gallery = () => {
         />
 
         <div
+          role="button"
+          tabIndex={0}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleFileDrop}
-          className={`relative rounded-2xl border-2 border-dashed p-4 sm:p-5 text-center transition-all
+          onClick={(e) => {
+            if (uploading) return;
+            // Não abrir se clicou em um botão interno
+            const target = e.target as HTMLElement;
+            if (target.closest("button")) return;
+            fileInputRef.current?.click();
+          }}
+          onKeyDown={(e) => {
+            if (uploading) return;
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              fileInputRef.current?.click();
+            }
+          }}
+          className={`relative rounded-2xl border-2 border-dashed p-4 sm:p-5 text-center transition-all cursor-pointer
             ${dragOver
               ? "border-primary bg-accent scale-[1.01]"
-              : "border-muted-foreground/30 hover:border-primary/50"
+              : "border-muted-foreground/30 hover:border-primary/50 hover:bg-accent/30"
             }
             ${uploading ? "pointer-events-none opacity-70" : ""}
           `}
