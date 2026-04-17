@@ -467,88 +467,85 @@ const GaleriaPublica = () => {
       {/* Lightbox */}
       {lightbox && (
         <div
-          className="fixed inset-0 z-50 overflow-y-auto bg-black/90"
+          className="fixed inset-0 z-50 bg-black/95 flex flex-col"
           onClick={closeLightbox}
         >
-          <div className="min-h-full flex items-start sm:items-center justify-center p-3 sm:p-6">
-          {/* Close */}
-          <button
-            onClick={closeLightbox}
-            className="fixed top-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors backdrop-blur-sm"
-            aria-label="Fechar"
-          >
-            <X className="h-5 w-5" />
-          </button>
-
-          {/* Counter */}
-          {lightboxIdx >= 0 && (
-            <div className="fixed top-4 left-4 z-20 text-white/80 text-sm font-medium px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm">
-              {lightboxIdx + 1} / {filteredFotos.length}
-            </div>
-          )}
-
-          {/* Prev */}
-          {hasPrev && (
+          {/* Top bar — Counter + Close */}
+          <div className="flex items-center justify-between px-4 py-3 shrink-0 z-20" onClick={(e) => e.stopPropagation()}>
+            {lightboxIdx >= 0 ? (
+              <div className="text-white/80 text-sm font-medium px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm">
+                {lightboxIdx + 1} / {filteredFotos.length}
+              </div>
+            ) : <div />}
             <button
-              onClick={(e) => { e.stopPropagation(); navigateLightbox(-1); }}
-              className="fixed left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors backdrop-blur-sm"
-              aria-label="Anterior"
+              onClick={closeLightbox}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/30 transition-colors backdrop-blur-sm"
+              aria-label="Fechar"
             >
-              <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+              <X className="h-6 w-6" />
             </button>
-          )}
+          </div>
 
-          {/* Next */}
-          {hasNext && (
-            <button
-              onClick={(e) => { e.stopPropagation(); navigateLightbox(1); }}
-              className="fixed right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors backdrop-blur-sm"
-              aria-label="Próxima"
-            >
-              <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
-            </button>
-          )}
+          {/* Image area — flex-1 fills remaining space */}
+          <div className="relative flex-1 min-h-0 flex items-center justify-center px-2 sm:px-16">
+            {/* Prev */}
+            {hasPrev && (
+              <button
+                onClick={(e) => { e.stopPropagation(); navigateLightbox(-1); }}
+                className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/30 transition-colors backdrop-blur-sm"
+                aria-label="Anterior"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+            )}
+            {/* Next */}
+            {hasNext && (
+              <button
+                onClick={(e) => { e.stopPropagation(); navigateLightbox(1); }}
+                className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/30 transition-colors backdrop-blur-sm"
+                aria-label="Próxima"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            )}
 
-          <div
-            className="relative w-full max-w-6xl flex flex-col rounded-xl overflow-hidden bg-neutral-900 shadow-2xl my-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
             {getFotoTipo(lightbox.url_foto) === "video" ? (
               <video
                 ref={videoRef}
                 src={lightbox.url_foto}
-                className="w-full max-h-[82vh] bg-black object-contain"
+                className="max-w-full max-h-full w-auto h-auto object-contain"
                 controls
                 muted={false}
                 autoPlay
                 playsInline
                 controlsList="nodownload"
+                onClick={(e) => e.stopPropagation()}
                 onPlay={handleVideoPlay}
                 onPause={handleVideoPause}
                 onLoadStart={() => setImgLoaded(false)}
                 onCanPlay={() => setImgLoaded(true)}
               />
             ) : (
-              <div className="relative w-full bg-black flex items-center justify-center" style={{ minHeight: "60vh", maxHeight: "82vh" }}>
-                {/* Thumbnail nítida aparece INSTANTANEAMENTE enquanto a full carrega */}
+              <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
+                {/* Thumbnail nítida instantânea */}
                 {decodeThumbnail(lightbox.legenda) && (
                   <img
                     src={decodeThumbnail(lightbox.legenda)!}
                     alt=""
                     aria-hidden="true"
-                    className="absolute max-w-full max-h-[82vh] w-auto h-auto object-contain"
+                    className="absolute max-w-full max-h-full w-auto h-auto object-contain"
                     style={{ opacity: imgLoaded ? 0 : 1, transition: "opacity 250ms ease-out" }}
                   />
                 )}
                 {!imgLoaded && (
-                  <div className="absolute top-4 right-4">
+                  <div className="absolute top-2 left-1/2 -translate-x-1/2">
                     <Loader2 className="h-6 w-6 animate-spin text-white/70" />
                   </div>
                 )}
                 <img
                   src={lightbox.url_foto}
                   alt={lightbox.titulo}
-                  className="relative max-w-full max-h-[82vh] w-auto h-auto object-contain"
+                  className="relative max-w-full max-h-full w-auto h-auto object-contain"
                   style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 250ms ease-out" }}
                   onLoad={() => setImgLoaded(true)}
                   decoding="async"
@@ -556,93 +553,85 @@ const GaleriaPublica = () => {
                 />
               </div>
             )}
+          </div>
 
-            <div className="p-4 shrink-0">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2">
-                    {getFotoTipo(lightbox.url_foto) === "video" && (
-                      <span className="text-xs font-semibold uppercase bg-primary/10 text-primary px-2 py-0.5 rounded shrink-0">
-                        Vídeo
-                      </span>
-                    )}
-                    <p className="font-semibold truncate">{lightbox.titulo}</p>
-                  </div>
-                  {lightbox.legenda && (() => {
-                    const { cleanLegenda } = decodeFocalPoint(lightbox.legenda);
-                    return cleanLegenda ? (
-                      <p className="text-sm text-muted-foreground mt-1">{cleanLegenda}</p>
-                    ) : null;
-                  })()}
+          {/* Bottom bar — Title + Actions, always visible */}
+          <div
+            className="shrink-0 px-4 py-3 sm:py-4 bg-gradient-to-t from-black via-black/80 to-transparent"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="max-w-6xl mx-auto flex items-center justify-between gap-3 flex-wrap">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  {getFotoTipo(lightbox.url_foto) === "video" && (
+                    <span className="text-xs font-semibold uppercase bg-primary/20 text-primary px-2 py-0.5 rounded shrink-0">
+                      Vídeo
+                    </span>
+                  )}
+                  {lightbox.titulo && lightbox.titulo.trim() && (
+                    <p className="font-semibold truncate text-white">{lightbox.titulo}</p>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 shrink-0">
-                  {/* Download */}
-                  <button
-                    onClick={async () => {
+                {lightbox.legenda && (() => {
+                  const { cleanLegenda } = decodeFocalPoint(lightbox.legenda);
+                  return cleanLegenda ? (
+                    <p className="text-sm text-white/70 mt-1 line-clamp-2">{cleanLegenda}</p>
+                  ) : null;
+                })()}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={async () => {
+                    try {
+                      const res = await fetch(lightbox.url_foto);
+                      const blob = await res.blob();
+                      const ext = isVideoUrl(lightbox.url_foto) ? "mp4" : "jpg";
+                      const a = document.createElement("a");
+                      a.href = URL.createObjectURL(blob);
+                      a.download = `${(lightbox.titulo || "foto").replace(/[^a-zA-Z0-9À-ú ]/g, "").trim() || "foto"}.${ext}`;
+                      a.click();
+                      URL.revokeObjectURL(a.href);
+                      toast.success("Download iniciado!");
+                    } catch {
+                      toast.error("Erro ao baixar.");
+                    }
+                  }}
+                  className="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium bg-white text-black hover:bg-white/90 transition-colors"
+                  title="Baixar"
+                >
+                  <Download className="h-4 w-4" />
+                  <span className="hidden sm:inline">Baixar</span>
+                </button>
+                <button
+                  onClick={async () => {
+                    const fotoUrl = `${window.location.origin}/galeria?foto=${lightbox.id}`;
+                    const texto = `${lightbox.titulo || "Foto"} — Fernanda Sarelli\n\n📷 Veja mais: ${fotoUrl}`;
+                    if (navigator.share) {
                       try {
                         const res = await fetch(lightbox.url_foto);
                         const blob = await res.blob();
                         const ext = isVideoUrl(lightbox.url_foto) ? "mp4" : "jpg";
-                        const a = document.createElement("a");
-                        a.href = URL.createObjectURL(blob);
-                        a.download = `${lightbox.titulo.replace(/[^a-zA-Z0-9À-ú ]/g, "").trim() || "foto"}.${ext}`;
-                        a.click();
-                        URL.revokeObjectURL(a.href);
-                        toast.success("Download iniciado!");
-                      } catch {
-                        toast.error("Erro ao baixar.");
-                      }
-                    }}
-                    className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium bg-accent text-accent-foreground hover:bg-accent/80 transition-colors"
-                    title="Baixar"
-                  >
-                    <Download className="h-4 w-4" />
-                    <span className="hidden sm:inline">Baixar</span>
-                  </button>
-                  {/* Share with image */}
-                  <button
-                    onClick={async () => {
-                      const fotoUrl = `${window.location.origin}/galeria?foto=${lightbox.id}`;
-                      const texto = `${lightbox.titulo} — Fernanda Sarelli\n\n📷 Veja mais: ${fotoUrl}`;
-
-                      if (navigator.share) {
-                        try {
-                          const res = await fetch(lightbox.url_foto);
-                          const blob = await res.blob();
-                          const ext = isVideoUrl(lightbox.url_foto) ? "mp4" : "jpg";
-                          const mimeType = isVideoUrl(lightbox.url_foto) ? "video/mp4" : "image/jpeg";
-                          const file = new File([blob], `foto.${ext}`, { type: mimeType });
-
-                          if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                            await navigator.share({
-                              title: lightbox.titulo,
-                              text: texto,
-                              url: fotoUrl,
-                              files: [file],
-                            });
-                          } else {
-                            await navigator.share({
-                              title: lightbox.titulo,
-                              text: texto,
-                              url: fotoUrl,
-                            });
-                          }
-                        } catch { /* cancelled */ }
-                      } else {
-                        await navigator.clipboard.writeText(texto);
-                        toast.success("Link copiado!");
-                      }
-                    }}
-                    className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-                    title="Compartilhar"
-                  >
-                    <Share2 className="h-4 w-4" />
-                    <span className="hidden sm:inline">Compartilhar</span>
-                  </button>
-                </div>
+                        const mimeType = isVideoUrl(lightbox.url_foto) ? "video/mp4" : "image/jpeg";
+                        const file = new File([blob], `foto.${ext}`, { type: mimeType });
+                        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                          await navigator.share({ title: lightbox.titulo || "Foto", text: texto, url: fotoUrl, files: [file] });
+                        } else {
+                          await navigator.share({ title: lightbox.titulo || "Foto", text: texto, url: fotoUrl });
+                        }
+                      } catch { /* cancelled */ }
+                    } else {
+                      await navigator.clipboard.writeText(texto);
+                      toast.success("Link copiado!");
+                    }
+                  }}
+                  className="flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                  title="Compartilhar"
+                >
+                  <Share2 className="h-4 w-4" />
+                  <span className="hidden sm:inline">Compartilhar</span>
+                </button>
               </div>
             </div>
-          </div>
           </div>
         </div>
       )}
