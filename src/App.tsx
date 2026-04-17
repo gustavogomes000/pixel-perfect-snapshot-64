@@ -5,7 +5,6 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import TrackingProvider from "@/components/TrackingProvider";
 import Index from "./pages/Index";
-import { useAgendaConfig } from "@/hooks/useAgendaConfig";
 
 // Lazy load non-critical routes
 const Sobre = lazy(() => import("./pages/Sobre"));
@@ -20,12 +19,6 @@ const Forms = lazy(() => import("./pages/admin/Forms"));
 const SettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const ValidarCaptura = lazy(() => import("./pages/ValidarCaptura"));
-
-const AgendaRoute = () => {
-  const { agendaAtiva } = useAgendaConfig();
-  if (!agendaAtiva) return <Navigate to="/" replace />;
-  return <Agenda />;
-};
 
 const queryClient = new QueryClient();
 
@@ -45,7 +38,7 @@ const AppShell = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/sobre" element={<Sobre />} />
-              <Route path="/agenda" element={<AgendaRoute />} />
+              <Route path="/agenda" element={<Agenda />} />
               <Route path="/redes-sociais" element={<RedesSociais />} />
               <Route path="/integracao" element={<Integracao />} />
               <Route path="/contato" element={<Contato />} />
