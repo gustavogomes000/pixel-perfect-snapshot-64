@@ -369,18 +369,14 @@ const Index = () => {
               <div className="absolute -inset-2 sm:-inset-3 rounded-[2rem] bg-primary/25 opacity-70 blur-xl -z-10" />
               {/* Moldura branca com borda rosa dupla */}
               <div className="relative rounded-[1.5rem] bg-card p-1.5 sm:p-2 shadow-2xl ring-2 ring-primary ring-offset-2 ring-offset-background">
-                {/* Mobile maior (aspect mais alto), desktop usa o aspect natural da foto */}
-                <div
-                  className="relative w-full overflow-hidden rounded-[1rem] banner-reveal aspect-[16/9] sm:aspect-auto"
-                  style={{ ["--banner-ratio" as any]: "3936 / 1243" }}
-                >
-                  <style>{`@media (min-width: 640px){.banner-natural{aspect-ratio:3936/1243}}`}</style>
+                {/* Mobile maior (16/7) sem cortar; desktop usa o aspect natural da foto (3936/1243) */}
+                <div className="relative w-full overflow-hidden rounded-[1rem] banner-reveal aspect-[16/7] sm:aspect-[3936/1243] bg-primary/10">
                   <img
                     src={bannerPalanqueMobile}
                     alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
                     loading="lazy"
                     decoding="async"
-                    className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 sm:group-hover:scale-[1.03]"
+                    className="absolute inset-0 w-full h-full object-contain sm:object-cover object-center transition-transform duration-700 sm:group-hover:scale-[1.03]"
                   />
                 </div>
               </div>
