@@ -112,11 +112,12 @@ const decodeImageSafe = async (file: File): Promise<{ bitmap: ImageBitmap | HTML
 };
 
 /**
- * Aggressive compression — Google Photos style.
- * - Max 1600px longest side, WebP 0.72 / JPEG 0.80
- * - Foto típica: DSLR 25MB → ~180-300KB · Celular 5MB → ~150-250KB
+ * Aggressive compression — Google Photos style "high quality" tier.
+ * - Max 1440px longest side · WebP 0.70 / JPEG 0.78
+ * - DSLR 25MB → ~150-260KB · Celular 5MB → ~120-220KB
+ * - Mantém qualidade visual muito boa para tela cheia + zoom moderado.
  */
-const compressImage = async (file: File, maxPx = 1600, jpegQuality = 0.80, webpQuality = 0.72): Promise<File> => {
+const compressImage = async (file: File, maxPx = 1440, jpegQuality = 0.78, webpQuality = 0.70): Promise<File> => {
   if (!file.type.startsWith("image/") || file.size < 200 * 1024) return file;
 
   let decoded;
@@ -657,6 +658,8 @@ const Gallery = () => {
         const { data: urlData } = cloudSupabase.storage.from("galeria").getPublicUrl(mainPath);
 
         let legendaBase: string | null = null;
+
+        // VIDEO: upload poster frame thumbnail
         if (item.isVideo && item.thumbnailDataUrl && thumbPath) {
           const thumbSignedUrl = signedUrlMap.get(thumbPath);
           if (thumbSignedUrl) {
@@ -669,6 +672,23 @@ const Gallery = () => {
                 legendaBase = `[tn:${thumbUrl.publicUrl}]`;
               }
             } catch { /* thumb opcional */ }
+          }
+        }
+
+        // PHOTO: generate + upload micro-thumbnail (~20-50KB) for instant grid loading
+        if (!item.isVideo && thumbPath) {
+          const thumbSignedUrl = signedUrlMap.get(thumbPath);
+          if (thumbSignedUrl) {
+            try {
+              const thumbBlob = await generateThumbnail(item.file, 480, 0.55);
+              if (thumbBlob) {
+                const thumbRes = await uploadWithRetry(thumbSignedUrl, thumbBlob, thumbBlob.type || "image/webp", 2);
+                if (thumbRes.ok) {
+                  const { data: thumbUrl } = cloudSupabase.storage.from("galeria").getPublicUrl(thumbPath);
+                  legendaBase = `[tn:${thumbUrl.publicUrl}]`;
+                }
+              }
+            } catch { /* thumb opcional, foto principal já foi enviada */ }
           }
         }
 
