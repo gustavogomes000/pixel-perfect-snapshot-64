@@ -589,15 +589,17 @@ const Gallery = () => {
     const allPaths: string[] = [];
     const thumbPaths: (string | null)[] = [];
 
-    for (const { fileToUpload, isVideo, thumbnailDataUrl } of prepared) {
+    for (const { fileToUpload, isVideo, thumbnailDataUrl, file: origFile } of prepared) {
       const sanitizedName = fileToUpload.name.replace(/\s+/g, "-").toLowerCase();
       const folder = isVideo ? "videos" : "galeria";
       const uid = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
       allPaths.push(`${folder}/${uid}_${sanitizedName}`);
 
       if (isVideo && thumbnailDataUrl) {
-        const tp = `thumbnails/${uid}.jpg`;
-        thumbPaths.push(tp);
+        thumbPaths.push(`thumbnails/${uid}.jpg`);
+      } else if (!isVideo) {
+        // Photo thumbnail for fast grid loading
+        thumbPaths.push(`thumbnails/${uid}.webp`);
       } else {
         thumbPaths.push(null);
       }
