@@ -646,5 +646,3 @@ const GaleriaPublica = () => {
 };
 
 export default GaleriaPublica;
-
-export default GaleriaPublica;
