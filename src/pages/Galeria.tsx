@@ -467,13 +467,14 @@ const GaleriaPublica = () => {
       {/* Lightbox */}
       {lightbox && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-3 sm:p-6"
+          className="fixed inset-0 z-50 overflow-y-auto bg-black/90"
           onClick={closeLightbox}
         >
+          <div className="min-h-full flex items-start sm:items-center justify-center p-3 sm:p-6">
           {/* Close */}
           <button
             onClick={closeLightbox}
-            className="absolute top-4 right-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+            className="fixed top-4 right-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors backdrop-blur-sm"
             aria-label="Fechar"
           >
             <X className="h-5 w-5" />
@@ -481,7 +482,7 @@ const GaleriaPublica = () => {
 
           {/* Counter */}
           {lightboxIdx >= 0 && (
-            <div className="absolute top-4 left-4 z-10 text-white/60 text-sm font-medium">
+            <div className="fixed top-4 left-4 z-20 text-white/80 text-sm font-medium px-3 py-1 rounded-full bg-black/40 backdrop-blur-sm">
               {lightboxIdx + 1} / {filteredFotos.length}
             </div>
           )}
@@ -490,7 +491,7 @@ const GaleriaPublica = () => {
           {hasPrev && (
             <button
               onClick={(e) => { e.stopPropagation(); navigateLightbox(-1); }}
-              className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 z-10 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+              className="fixed left-2 sm:left-4 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors backdrop-blur-sm"
               aria-label="Anterior"
             >
               <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -501,7 +502,7 @@ const GaleriaPublica = () => {
           {hasNext && (
             <button
               onClick={(e) => { e.stopPropagation(); navigateLightbox(1); }}
-              className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 z-10 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors"
+              className="fixed right-2 sm:right-4 top-1/2 -translate-y-1/2 z-20 flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition-colors backdrop-blur-sm"
               aria-label="Próxima"
             >
               <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
@@ -509,7 +510,7 @@ const GaleriaPublica = () => {
           )}
 
           <div
-            className="relative w-full max-w-6xl max-h-[95vh] flex flex-col rounded-xl overflow-hidden bg-neutral-900 shadow-2xl"
+            className="relative w-full max-w-6xl flex flex-col rounded-xl overflow-hidden bg-neutral-900 shadow-2xl my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {getFotoTipo(lightbox.url_foto) === "video" ? (
