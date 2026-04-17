@@ -403,10 +403,30 @@ const Gallery = () => {
   };
 
   // === Upload (photos + videos) ===
+  // Limites de segurança: evita travar navegador e estourar bucket
+  const MAX_PHOTO_SIZE = 50 * 1024 * 1024;   // 50 MB por foto
+  const MAX_VIDEO_SIZE = 200 * 1024 * 1024;  // 200 MB por vídeo
+  const MAX_FILES_PER_BATCH = 30;
+
   const stageFilesForPreview = (files: File[]) => {
     const mediaFiles = files.filter(f => f.type.startsWith("image/") || f.type.startsWith("video/"));
     if (mediaFiles.length === 0) {
       toast.error("Nenhum arquivo válido. Selecione fotos ou vídeos.");
+      return;
+    }
+
+    if (mediaFiles.length > MAX_FILES_PER_BATCH) {
+      toast.error(`Máximo de ${MAX_FILES_PER_BATCH} arquivos por envio. Selecionados: ${mediaFiles.length}.`);
+      return;
+    }
+
+    const oversize = mediaFiles.find(f => {
+      const limit = f.type.startsWith("video/") ? MAX_VIDEO_SIZE : MAX_PHOTO_SIZE;
+      return f.size > limit;
+    });
+    if (oversize) {
+      const limitMB = oversize.type.startsWith("video/") ? 200 : 50;
+      toast.error(`"${oversize.name}" excede o limite de ${limitMB} MB.`);
       return;
     }
 
