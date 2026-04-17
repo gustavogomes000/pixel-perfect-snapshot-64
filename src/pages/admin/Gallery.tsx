@@ -112,12 +112,12 @@ const decodeImageSafe = async (file: File): Promise<{ bitmap: ImageBitmap | HTML
 };
 
 /**
- * High-quality compression — preserves sharpness for fullscreen viewing.
- * - Max 2560px longest side (4K-ready) · WebP 0.88 / JPEG 0.92
- * - DSLR 25MB → ~600KB-1.2MB · Celular 5MB → ~400-800KB
- * - Qualidade visual excelente, sem pixelização perceptível.
+ * Smart compression — Full HD quality (perfect for viewing AND downloading).
+ * - Max 1920px longest side · WebP 0.82 / JPEG 0.86
+ * - DSLR 25MB → ~250-500KB · Celular 5MB → ~180-350KB
+ * - Mesma qualidade para tela e download. Ocupa o mínimo no banco.
  */
-const compressImage = async (file: File, maxPx = 2560, jpegQuality = 0.92, webpQuality = 0.88): Promise<File> => {
+const compressImage = async (file: File, maxPx = 1920, jpegQuality = 0.86, webpQuality = 0.82): Promise<File> => {
   if (!file.type.startsWith("image/") || file.size < 200 * 1024) return file;
 
   let decoded;
@@ -180,10 +180,10 @@ const compressImage = async (file: File, maxPx = 2560, jpegQuality = 0.92, webpQ
 };
 
 /**
- * Generate a small thumbnail (480px, WebP 0.55) — ~20-50KB.
- * Used in grid for INSTANT loading + as LQIP placeholder in lightbox.
+ * Generate thumbnail (640px, WebP 0.72) — ~40-90KB.
+ * Used in grid for INSTANT loading + as nítida preview no lightbox.
  */
-const generateThumbnail = async (file: File, maxPx = 480, quality = 0.55): Promise<Blob | null> => {
+const generateThumbnail = async (file: File, maxPx = 640, quality = 0.72): Promise<Blob | null> => {
   if (!file.type.startsWith("image/")) return null;
   let decoded;
   try { decoded = await decodeImageSafe(file); } catch { return null; }
@@ -680,7 +680,7 @@ const Gallery = () => {
           const thumbSignedUrl = signedUrlMap.get(thumbPath);
           if (thumbSignedUrl) {
             try {
-              const thumbBlob = await generateThumbnail(item.file, 480, 0.55);
+              const thumbBlob = await generateThumbnail(item.file);
               if (thumbBlob) {
                 const thumbRes = await uploadWithRetry(thumbSignedUrl, thumbBlob, thumbBlob.type || "image/webp", 2);
                 if (thumbRes.ok) {
