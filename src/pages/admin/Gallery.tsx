@@ -1226,36 +1226,40 @@ const Gallery = () => {
                 </p>
               </div>
             )}
-            <DialogFooter className="flex gap-2 sm:gap-2">
+            <DialogFooter className="flex flex-col-reverse sm:flex-row gap-2 sm:gap-2 pt-2">
               {pendingUploads.length > 1 && (
-                <div className="flex gap-2 mr-auto">
+                <div className="flex gap-2 sm:mr-auto">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full"
+                    className="rounded-full flex-1 sm:flex-none"
                     disabled={previewIndex === 0}
                     onClick={() => setPreviewIndex(i => i - 1)}
                   >
-                    <ArrowLeft className="h-4 w-4 mr-1" /> Anterior
+                    <ArrowLeft className="h-4 w-4 sm:mr-1" />
+                    <span className="hidden sm:inline">Anterior</span>
                   </Button>
                   <Button
                     variant="outline"
                     size="sm"
-                    className="rounded-full"
+                    className="rounded-full flex-1 sm:flex-none"
                     disabled={previewIndex === pendingUploads.length - 1}
                     onClick={() => setPreviewIndex(i => i + 1)}
                   >
-                    Próxima <ArrowRight className="h-4 w-4 ml-1" />
+                    <span className="hidden sm:inline">Próxima</span>
+                    <ArrowRight className="h-4 w-4 sm:ml-1" />
                   </Button>
                 </div>
               )}
-              <Button variant="ghost" onClick={cancelUploadPreviews} className="rounded-full">
-                Cancelar
-              </Button>
-              <Button onClick={confirmUploadPreviews} className="rounded-full">
-                <Upload className="h-4 w-4 mr-1" />
-                Enviar {pendingUploads.length > 1 ? `${pendingUploads.length} arquivo(s)` : pendingUploads[0]?.isVideo ? "vídeo" : "foto"}
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button variant="ghost" onClick={cancelUploadPreviews} className="rounded-full flex-1 sm:flex-none">
+                  Cancelar
+                </Button>
+                <Button onClick={confirmUploadPreviews} className="rounded-full flex-1 sm:flex-none">
+                  <Upload className="h-4 w-4 mr-1" />
+                  Enviar {pendingUploads.length > 1 ? `${pendingUploads.length} arquivos` : pendingUploads[0]?.isVideo ? "vídeo" : "foto"}
+                </Button>
+              </div>
             </DialogFooter>
           </DialogContent>
         </Dialog>
