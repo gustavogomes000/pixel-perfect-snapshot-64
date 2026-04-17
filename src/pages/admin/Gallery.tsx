@@ -112,12 +112,13 @@ const decodeImageSafe = async (file: File): Promise<{ bitmap: ImageBitmap | HTML
 };
 
 /**
- * High-fidelity compression — preserva nitidez total sem pixelização.
- * - Max 2400px longest side · WebP 0.92 / JPEG 0.94
- * - DSLR 25MB → ~600KB-1.4MB · Celular 5MB → ~400-800KB
- * - Qualidade visualmente idêntica ao original em qualquer tela.
+ * MAXIMUM-fidelity compression — qualidade visual indistinguível do original.
+ * - Max 3200px no lado mais longo (cobre 4K perfeito) · WebP 0.96 / JPEG 0.97
+ * - Downscale progressivo (box-filter passo-a-passo) preserva nitidez total
+ * - Se o resultado ficar maior que o original, MANTÉM o original intacto
+ * - DSLR 25MB → ~1.5-3MB · Celular 8MB → ~800KB-1.5MB · Zero perda visível
  */
-const compressImage = async (file: File, maxPx = 2400, jpegQuality = 0.94, webpQuality = 0.92): Promise<File> => {
+const compressImage = async (file: File, maxPx = 3200, jpegQuality = 0.97, webpQuality = 0.96): Promise<File> => {
   if (!file.type.startsWith("image/") || file.size < 200 * 1024) return file;
 
   let decoded;
