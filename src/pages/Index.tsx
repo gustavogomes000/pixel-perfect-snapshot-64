@@ -9,6 +9,7 @@ import { getGaleriaAtiva } from "@/hooks/useGaleriaConfig";
 import Layout from "@/components/Layout";
 import WaveDivider from "@/components/WaveDivider";
 import ScrollReveal from "@/components/ScrollReveal";
+import ParallaxRevealCard from "@/components/ParallaxRevealCard";
 import logoSarelli from "@/assets/logo-sarelli.png";
 import logoNovo from "@/assets/logo-novo-partido.png";
 import heroBg from "@/assets/hero-bg-bandeira.jpg";
@@ -65,17 +66,14 @@ const Index = () => {
   const [lightbox, setLightbox] = useState<HomeGalleryItem | null>(null);
   const [imgLoaded, setImgLoaded] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
-  // DEV: controles da bandeira com persistência
-  const savedFlag = JSON.parse(localStorage.getItem('flagPos') || '{"x":0,"y":0,"z":100}');
-  const [flagPosX, setFlagPosX] = useState(savedFlag.x);
-  const [flagPosY, setFlagPosY] = useState(savedFlag.y);
-  const [flagZoom, setFlagZoom] = useState(savedFlag.z);
-  const [flagSaved, setFlagSaved] = useState(false);
-  const saveFlag = () => {
-    localStorage.setItem('flagPos', JSON.stringify({ x: flagPosX, y: flagPosY, z: flagZoom }));
-    setFlagSaved(true);
-    setTimeout(() => setFlagSaved(false), 2000);
-  };
+  // Posição final salva da bandeira (lê do localStorage; fallback estático)
+  const flagPos = (() => {
+    try {
+      const raw = localStorage.getItem('flagPos');
+      if (raw) return JSON.parse(raw);
+    } catch { /* ignore */ }
+    return { x: 0, y: 0, z: 100 };
+  })();
   const videoRef = useRef<HTMLVideoElement>(null);
   const { events: proximosEventos, loading: eventosLoading, error: eventosError } = useGoogleCalendar({ filter: "proximos", limit: 3 });
   const eventos = Array.isArray(proximosEventos) ? proximosEventos : [];
@@ -140,28 +138,6 @@ const Index = () => {
   return (
     <Layout>
       <section className="relative overflow-hidden">
-        {/* DEV: Controles temporários com botão salvar */}
-        <div className="fixed top-2 left-2 z-[9999] bg-black/90 text-white p-3 rounded-lg text-xs space-y-2 w-64">
-          <p className="font-bold text-sm">🎯 Ajuste da Bandeira</p>
-          <div>
-            <label>Mover X: {flagPosX}px</label>
-            <input type="range" min="-500" max="500" value={flagPosX} onChange={e => setFlagPosX(Number(e.target.value))} className="w-full" />
-          </div>
-          <div>
-            <label>Mover Y: {flagPosY}px</label>
-            <input type="range" min="-500" max="500" value={flagPosY} onChange={e => setFlagPosY(Number(e.target.value))} className="w-full" />
-          </div>
-          <div>
-            <label>Zoom: {flagZoom}%</label>
-            <input type="range" min="50" max="300" value={flagZoom} onChange={e => setFlagZoom(Number(e.target.value))} className="w-full" />
-          </div>
-          <p className="text-yellow-300 font-mono text-[10px] break-all select-all">
-            X:{flagPosX}px Y:{flagPosY}px Zoom:{flagZoom}%
-          </p>
-          <button onClick={saveFlag} className={`w-full py-1.5 rounded font-bold text-sm ${flagSaved ? 'bg-green-500' : 'bg-blue-600 hover:bg-blue-500'}`}>
-            {flagSaved ? '✅ Salvo!' : '💾 Salvar Posição'}
-          </button>
-        </div>
         <div className="absolute inset-0 bg-primary overflow-hidden">
           <video
             src={heroBgVideo.url}
@@ -169,13 +145,14 @@ const Index = () => {
             loop
             muted
             playsInline
+            preload="metadata"
             style={{
               position: 'absolute',
               top: '50%',
               left: '50%',
               minWidth: '100%',
               minHeight: '100%',
-              transform: `translate(calc(-50% + ${flagPosX}px), calc(-50% + ${flagPosY}px)) scale(${flagZoom / 100})`,
+              transform: `translate(calc(-50% + ${flagPos.x}px), calc(-50% + ${flagPos.y}px)) scale(${flagPos.z / 100})`,
             }}
           />
           <div className="absolute inset-0 bg-gradient-to-b from-primary/30 via-transparent to-primary/40" />
