@@ -694,7 +694,8 @@ const Gallery = () => {
 
         const legendaWithFp = encodeFocalPoint(legendaBase, item.focalX, item.focalY, item.zoom);
         successfulPhotos.push({
-          titulo: item.file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
+          // Padrão: SEM nome. Usuário define depois se quiser. Espaço único satisfaz NOT NULL.
+          titulo: " ",
           url_foto: urlData.publicUrl,
           album_id: selectedAlbum,
           visivel: true,

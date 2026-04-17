@@ -62,16 +62,13 @@ Deno.serve(async (req) => {
         });
       }
 
-      // ── DELETE photo ──
+      // ── DELETE photo (idempotent: nunca falha se já removida) ──
       case "delete-photo": {
         const { id } = body;
         if (!id || typeof id !== "string") return json({ success: false, error: "Missing 'id'" }, 400);
         const { data, error } = await ext.from("galeria_fotos").delete().eq("id", id).select();
         if (error) throw error;
-        if (!data || data.length === 0) {
-          return json({ success: false, error: "Item não encontrado ou já foi removido." }, 404);
-        }
-        return json({ success: true, deleted: data.length });
+        return json({ success: true, deleted: data?.length || 0 });
       }
 
       // ── BULK DELETE photos ──
