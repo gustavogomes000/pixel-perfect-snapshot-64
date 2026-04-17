@@ -800,7 +800,8 @@ const Gallery = () => {
           </div>
         </div>
 
-        {/* ===== UPLOAD AREA ===== */}
+        {/* ===== UPLOAD AREA — múltiplas fontes (mobile + desktop) ===== */}
+        {/* Input: arquivo geral (qualquer arquivo de imagem/vídeo, inclui drag-drop e Drive via "Open with") */}
         <input
           ref={fileInputRef}
           type="file"
@@ -812,16 +813,39 @@ const Gallery = () => {
             if (e.target) e.target.value = "";
           }}
         />
+        {/* Input: câmera (mobile abre a câmera direto; desktop pode ignorar capture) */}
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*,video/*"
+          capture="environment"
+          className="hidden"
+          onChange={(e) => {
+            stageFilesForPreview(Array.from(e.target.files || []));
+            if (e.target) e.target.value = "";
+          }}
+        />
+        {/* Input: galeria/fotos (mobile mostra picker de fotos; desktop = file picker) */}
+        <input
+          ref={galleryInputRef}
+          type="file"
+          accept="image/*,video/*"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            stageFilesForPreview(Array.from(e.target.files || []));
+            if (e.target) e.target.value = "";
+          }}
+        />
 
         <div
-          onClick={() => fileInputRef.current?.click()}
           onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
           onDragLeave={() => setDragOver(false)}
           onDrop={handleFileDrop}
-          className={`relative rounded-2xl border-2 border-dashed p-5 text-center transition-all cursor-pointer
+          className={`relative rounded-2xl border-2 border-dashed p-4 sm:p-5 text-center transition-all
             ${dragOver
               ? "border-primary bg-accent scale-[1.01]"
-              : "border-muted-foreground/30 hover:border-primary hover:bg-accent/30"
+              : "border-muted-foreground/30 hover:border-primary/50"
             }
             ${uploading ? "pointer-events-none opacity-70" : ""}
           `}
@@ -835,32 +859,73 @@ const Gallery = () => {
                 />
               </div>
               <p className="text-sm text-muted-foreground">Enviando arquivos... {uploadProgress}%</p>
+              <p className="text-xs text-muted-foreground/70">Não feche esta página</p>
             </div>
           ) : (
-            <>
-              <div className="flex justify-center gap-2 mb-2">
-                <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center">
+            <div className="space-y-3">
+              <div className="flex justify-center gap-2">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Camera className="h-5 w-5 text-primary" />
                 </div>
-                <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
+                  <Images className="h-5 w-5 text-primary" />
+                </div>
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                   <Video className="h-5 w-5 text-primary" />
                 </div>
               </div>
               <p className="text-sm font-semibold">
-                Toque para enviar fotos ou vídeos
+                Enviar fotos e vídeos
               </p>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                JPG, PNG, MP4, WebM · Máx. 50 arquivos por vez
+
+              {/* Botões de fonte: ficam em coluna no mobile, lado a lado no desktop */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 max-w-xl mx-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl h-12 gap-2 font-medium"
+                  onClick={() => cameraInputRef.current?.click()}
+                >
+                  <Camera className="h-4 w-4" />
+                  Tirar foto / Gravar
+                </Button>
+                <Button
+                  type="button"
+                  variant="default"
+                  className="rounded-xl h-12 gap-2 font-medium"
+                  onClick={() => galleryInputRef.current?.click()}
+                >
+                  <Images className="h-4 w-4" />
+                  Galeria do aparelho
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="rounded-xl h-12 gap-2 font-medium"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <FolderOpen className="h-4 w-4" />
+                  Arquivos / Drive
+                </Button>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground">
+                JPG, PNG, HEIC, MP4, WebM · até 50 por vez · arraste arquivos aqui também
               </p>
+              <p className="text-[10px] text-muted-foreground/80">
+                Dica: para enviar do <strong>Google Drive</strong>, toque em "Arquivos / Drive" e escolha o Drive no seletor do seu celular.
+              </p>
+
               {selectedAlbumName && (
-                <Badge variant="secondary" className="mt-3">
+                <Badge variant="secondary" className="mt-1">
                   <FolderOpen className="h-3 w-3 mr-1" />
                   Serão salvos em: {selectedAlbumName}
                 </Badge>
               )}
-            </>
+            </div>
           )}
         </div>
+
 
         {/* ===== SECONDARY ACTIONS ===== */}
         <div className="flex flex-wrap items-center gap-1.5">
