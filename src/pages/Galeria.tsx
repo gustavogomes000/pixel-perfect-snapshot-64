@@ -467,9 +467,185 @@ const GaleriaPublica = () => {
       {/* Lightbox */}
       {lightbox && (
         <div
-          className="fixed inset-0 z-[100] bg-black flex flex-col"
+          className="fixed inset-0 z-[100] bg-black"
           onClick={closeLightbox}
+          role="dialog"
+          aria-modal="true"
         >
+          {/* TOP BAR */}
+          <div
+            className="absolute top-0 left-0 right-0 h-14 sm:h-16 flex items-center justify-between px-3 sm:px-5 bg-black/80 backdrop-blur-sm z-30"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-white/90 text-sm font-medium">
+              {lightboxIdx >= 0 ? `${lightboxIdx + 1} / ${filteredFotos.length}` : ""}
+            </div>
+            <button
+              onClick={closeLightbox}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors"
+              aria-label="Fechar"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* BOTTOM BAR */}
+          <div
+            className="absolute bottom-0 left-0 right-0 min-h-16 sm:min-h-20 flex items-center justify-between gap-3 px-3 sm:px-5 py-3 bg-black/80 backdrop-blur-sm z-30"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-2">
+                {getFotoTipo(lightbox.url_foto) === "video" && (
+                  <span className="text-[10px] font-semibold uppercase bg-primary/20 text-primary px-2 py-0.5 rounded shrink-0">
+                    Vídeo
+                  </span>
+                )}
+                {lightbox.titulo && lightbox.titulo.trim() && (
+                  <p className="text-sm font-medium truncate text-white">{lightbox.titulo}</p>
+                )}
+              </div>
+              {lightbox.legenda && (() => {
+                const { cleanLegenda } = decodeFocalPoint(lightbox.legenda);
+                return cleanLegenda ? (
+                  <p className="text-xs text-white/60 truncate mt-0.5">{cleanLegenda}</p>
+                ) : null;
+              })()}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                onClick={async () => {
+                  try {
+                    const res = await fetch(lightbox.url_foto);
+                    const blob = await res.blob();
+                    const ext = isVideoUrl(lightbox.url_foto) ? "mp4" : "jpg";
+                    const a = document.createElement("a");
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `${(lightbox.titulo || "foto").replace(/[^a-zA-Z0-9À-ú ]/g, "").trim() || "foto"}.${ext}`;
+                    a.click();
+                    URL.revokeObjectURL(a.href);
+                    toast.success("Download iniciado!");
+                  } catch {
+                    toast.error("Erro ao baixar.");
+                  }
+                }}
+                className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 h-9 text-sm font-medium bg-white text-black hover:bg-white/90 transition-colors"
+                title="Baixar"
+              >
+                <Download className="h-4 w-4" />
+                <span className="hidden sm:inline">Baixar</span>
+              </button>
+              <button
+                onClick={async () => {
+                  const fotoUrl = `${window.location.origin}/galeria?foto=${lightbox.id}`;
+                  const texto = `${lightbox.titulo || "Foto"} — Fernanda Sarelli\n\n📷 Veja mais: ${fotoUrl}`;
+                  if (navigator.share) {
+                    try {
+                      const res = await fetch(lightbox.url_foto);
+                      const blob = await res.blob();
+                      const ext = isVideoUrl(lightbox.url_foto) ? "mp4" : "jpg";
+                      const mimeType = isVideoUrl(lightbox.url_foto) ? "video/mp4" : "image/jpeg";
+                      const file = new File([blob], `foto.${ext}`, { type: mimeType });
+                      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        await navigator.share({ title: lightbox.titulo || "Foto", text: texto, url: fotoUrl, files: [file] });
+                      } else {
+                        await navigator.share({ title: lightbox.titulo || "Foto", text: texto, url: fotoUrl });
+                      }
+                    } catch { /* cancelled */ }
+                  } else {
+                    await navigator.clipboard.writeText(texto);
+                    toast.success("Link copiado!");
+                  }
+                }}
+                className="flex items-center gap-1.5 rounded-full px-3 sm:px-4 h-9 text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+                title="Compartilhar"
+              >
+                <Share2 className="h-4 w-4" />
+                <span className="hidden sm:inline">Compartilhar</span>
+              </button>
+            </div>
+          </div>
+
+          {/* NAV */}
+          {hasPrev && (
+            <button
+              onClick={(e) => { e.stopPropagation(); navigateLightbox(-1); }}
+              className="absolute left-2 sm:left-5 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors backdrop-blur-sm"
+              aria-label="Anterior"
+            >
+              <ChevronLeft className="h-6 w-6" />
+            </button>
+          )}
+          {hasNext && (
+            <button
+              onClick={(e) => { e.stopPropagation(); navigateLightbox(1); }}
+              className="absolute right-2 sm:right-5 top-1/2 -translate-y-1/2 z-30 flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-full bg-white/15 text-white hover:bg-white/25 transition-colors backdrop-blur-sm"
+              aria-label="Próxima"
+            >
+              <ChevronRight className="h-6 w-6" />
+            </button>
+          )}
+
+          {/* MEDIA AREA — entre as barras, foto sempre INTEIRA */}
+          <div
+            className="absolute top-14 sm:top-16 bottom-16 sm:bottom-20 left-0 right-0 flex items-center justify-center px-2 sm:px-20"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {getFotoTipo(lightbox.url_foto) === "video" ? (
+              <video
+                ref={videoRef}
+                src={lightbox.url_foto}
+                className="max-w-full max-h-full w-auto h-auto object-contain"
+                controls
+                autoPlay
+                playsInline
+                controlsList="nodownload"
+                onPlay={handleVideoPlay}
+                onPause={handleVideoPause}
+                onLoadStart={() => setImgLoaded(false)}
+                onCanPlay={() => setImgLoaded(true)}
+              />
+            ) : (
+              <>
+                {(() => {
+                  const thumb = decodeThumbnail(lightbox.legenda);
+                  return (
+                    <>
+                      {thumb && !imgLoaded && (
+                        <img
+                          src={thumb}
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute max-w-full max-h-full w-auto h-auto object-contain"
+                        />
+                      )}
+                      {!imgLoaded && (
+                        <div className="absolute z-10">
+                          <Loader2 className="h-8 w-8 animate-spin text-white/70" />
+                        </div>
+                      )}
+                      <img
+                        src={lightbox.url_foto}
+                        alt={lightbox.titulo}
+                        className="relative max-w-full max-h-full w-auto h-auto object-contain"
+                        style={{ opacity: imgLoaded ? 1 : (thumb ? 0 : 1), transition: "opacity 200ms ease-out" }}
+                        onLoad={() => setImgLoaded(true)}
+                        decoding="async"
+                        fetchPriority="high"
+                      />
+                    </>
+                  );
+                })()}
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </Layout>
+  );
+};
+
+export default GaleriaPublica;
           {/* Top bar — Counter + Close */}
           <div className="flex items-center justify-between px-4 py-3 shrink-0 z-20" onClick={(e) => e.stopPropagation()}>
             {lightboxIdx >= 0 ? (
