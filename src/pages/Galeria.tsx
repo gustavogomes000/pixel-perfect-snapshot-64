@@ -466,7 +466,7 @@ const GaleriaPublica = () => {
       </section>
 
       {/* Lightbox */}
-      {lightbox && (
+      {lightbox && createPortal(
         <div
           className="fixed inset-0 z-[100] bg-black flex flex-col"
           onClick={closeLightbox}
