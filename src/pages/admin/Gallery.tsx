@@ -180,10 +180,10 @@ const compressImage = async (file: File, maxPx = 1920, jpegQuality = 0.86, webpQ
 };
 
 /**
- * Generate a small thumbnail (480px, WebP 0.55) — ~20-50KB.
- * Used in grid for INSTANT loading + as LQIP placeholder in lightbox.
+ * Generate thumbnail (640px, WebP 0.72) — ~40-90KB.
+ * Used in grid for INSTANT loading + as nítida preview no lightbox.
  */
-const generateThumbnail = async (file: File, maxPx = 480, quality = 0.55): Promise<Blob | null> => {
+const generateThumbnail = async (file: File, maxPx = 640, quality = 0.72): Promise<Blob | null> => {
   if (!file.type.startsWith("image/")) return null;
   let decoded;
   try { decoded = await decodeImageSafe(file); } catch { return null; }
