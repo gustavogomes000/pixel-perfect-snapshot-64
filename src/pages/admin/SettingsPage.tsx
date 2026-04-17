@@ -80,21 +80,20 @@ const SettingsPage = () => {
   };
 
   const saveConfig = async (chave: string, valor: boolean) => {
-    const { data: sess } = await supabase.auth.getSession();
-    const token = sess.session?.access_token;
-    const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/site-config`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ chave, valor }),
-      }
-    );
-    if (!res.ok) throw new Error("save failed");
+    if (!apiToken) throw new Error("API token vazio. Gere um token primeiro.");
+    const res = await fetch(`${SUPABASE_URL}/functions/v1/site-config`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        "x-api-token": apiToken,
+      },
+      body: JSON.stringify({ chave, valor }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || "save failed");
+    }
     invalidateSiteConfig();
   };
 
