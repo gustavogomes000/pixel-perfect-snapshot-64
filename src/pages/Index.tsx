@@ -365,21 +365,19 @@ const Index = () => {
           </ScrollReveal>
           <ScrollReveal>
             <div className="relative max-w-6xl mx-auto group">
-              {/* Glow rosa suave */}
-              <div className="absolute -inset-1.5 sm:-inset-2 rounded-[2rem] bg-primary/20 opacity-60 blur-lg -z-10" />
-              {/* Moldura toda rosa, sem branco */}
-              <div className="relative rounded-[1.75rem] overflow-hidden shadow-xl ring-2 ring-primary/70 outline outline-2 outline-primary/40 outline-offset-0">
-                {/* Mobile/tablet: foto inteira sem cortar (contain). Desktop: cover focado no palco */}
-                <div className="relative w-full aspect-[16/5] sm:aspect-[16/6] lg:aspect-[16/7] overflow-hidden banner-reveal bg-primary/10">
-                  <picture>
-                    <source media="(min-width: 1024px)" srcSet={bannerPalanque} />
-                    <img
-                      src={bannerPalanqueMobile}
-                      alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
-                      loading="lazy"
-                      className="absolute inset-0 w-full h-full object-contain lg:object-cover lg:object-[center_22%] transition-transform duration-700 sm:group-hover:scale-[1.04]"
-                    />
-                  </picture>
+              {/* Glow rosa externo */}
+              <div className="absolute -inset-2 sm:-inset-3 rounded-[2rem] bg-primary/25 opacity-70 blur-xl -z-10" />
+              {/* Moldura branca com borda rosa dupla */}
+              <div className="relative rounded-[1.5rem] bg-card p-1.5 sm:p-2 shadow-2xl ring-2 ring-primary ring-offset-2 ring-offset-background">
+                {/* Mesma foto cropada em todas telas, aspect bate com a imagem (sem sobras, sem cortes) */}
+                <div className="relative w-full overflow-hidden rounded-[1rem] banner-reveal" style={{ aspectRatio: "3936 / 1243" }}>
+                  <img
+                    src={bannerPalanqueMobile}
+                    alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
+                    loading="lazy"
+                    decoding="async"
+                    className="absolute inset-0 w-full h-full object-cover object-center transition-transform duration-700 sm:group-hover:scale-[1.03]"
+                  />
                 </div>
               </div>
             </div>
