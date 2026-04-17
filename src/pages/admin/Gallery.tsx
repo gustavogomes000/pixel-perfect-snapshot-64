@@ -563,8 +563,8 @@ const Gallery = () => {
       toast.error("Nenhum arquivo válido. Selecione fotos ou vídeos.");
       return;
     }
-    if (mediaFiles.length > 50) {
-      toast.error(`Máximo de 50 arquivos por vez. Você selecionou ${mediaFiles.length}.`);
+    if (mediaFiles.length > 200) {
+      toast.error(`Máximo de 200 arquivos por vez. Você selecionou ${mediaFiles.length}.`);
       return;
     }
 
@@ -604,7 +604,17 @@ const Gallery = () => {
     const thumbPaths: (string | null)[] = [];
 
     for (const { fileToUpload, isVideo, thumbnailDataUrl, file: origFile } of prepared) {
-      const sanitizedName = fileToUpload.name.replace(/\s+/g, "-").toLowerCase();
+      // Strict sanitization for Supabase Storage keys (no accents, no parens, no special chars)
+      const dotIdx = fileToUpload.name.lastIndexOf(".");
+      const rawBase = dotIdx > 0 ? fileToUpload.name.slice(0, dotIdx) : fileToUpload.name;
+      const rawExt = dotIdx > 0 ? fileToUpload.name.slice(dotIdx + 1) : "";
+      const cleanBase = rawBase
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // strip accents (ç → c, ã → a)
+        .replace(/[^a-zA-Z0-9._-]+/g, "-") // only safe chars
+        .replace(/-+/g, "-").replace(/^-|-$/g, "")
+        .slice(0, 60).toLowerCase() || "file";
+      const cleanExt = rawExt.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() || "bin";
+      const sanitizedName = `${cleanBase}.${cleanExt}`;
       const folder = isVideo ? "videos" : "galeria";
       const uid = `${Date.now()}_${Math.random().toString(36).slice(2)}`;
       allPaths.push(`${folder}/${uid}_${sanitizedName}`);
