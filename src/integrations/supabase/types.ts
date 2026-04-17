@@ -125,6 +125,7 @@ export type Database = {
           capa_url: string | null
           criado_em: string
           descricao: string | null
+          fixado_home: boolean
           id: string
           nome: string
           ordem: number | null
@@ -134,6 +135,7 @@ export type Database = {
           capa_url?: string | null
           criado_em?: string
           descricao?: string | null
+          fixado_home?: boolean
           id?: string
           nome: string
           ordem?: number | null
@@ -143,6 +145,7 @@ export type Database = {
           capa_url?: string | null
           criado_em?: string
           descricao?: string | null
+          fixado_home?: boolean
           id?: string
           nome?: string
           ordem?: number | null
@@ -704,6 +707,39 @@ export type Database = {
           votos_legenda?: number | null
           votos_nominais?: number | null
           zona?: number | null
+        }
+        Relationships: []
+      }
+      cadastros_fernanda: {
+        Row: {
+          atualizado_em: string
+          cadastrado_por: string | null
+          cidade: string | null
+          criado_em: string
+          id: string
+          instagram: string | null
+          nome: string
+          telefone: string
+        }
+        Insert: {
+          atualizado_em?: string
+          cadastrado_por?: string | null
+          cidade?: string | null
+          criado_em?: string
+          id?: string
+          instagram?: string | null
+          nome: string
+          telefone: string
+        }
+        Update: {
+          atualizado_em?: string
+          cadastrado_por?: string | null
+          cidade?: string | null
+          criado_em?: string
+          id?: string
+          instagram?: string | null
+          nome?: string
+          telefone?: string
         }
         Relationships: []
       }
@@ -2208,6 +2244,7 @@ export type Database = {
         | "suplente"
         | "lideranca"
         | "fiscal"
+        | "fernanda"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2342,6 +2379,7 @@ export const Constants = {
         "suplente",
         "lideranca",
         "fiscal",
+        "fernanda",
       ],
     },
   },
