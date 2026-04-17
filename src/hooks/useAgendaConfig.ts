@@ -12,6 +12,6 @@ export function invalidateAgendaCache() {
 }
 
 export function useAgendaConfig() {
-  const { agenda_ativa } = useSiteConfig();
-  return { agendaAtiva: agenda_ativa };
+  const { agenda_ativa, loaded } = useSiteConfig();
+  return { agendaAtiva: agenda_ativa, loaded };
 }

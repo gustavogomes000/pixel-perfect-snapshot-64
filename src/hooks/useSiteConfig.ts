@@ -41,9 +41,13 @@ export function invalidateSiteConfig() {
 }
 
 export function useSiteConfig() {
-  const [config, setConfig] = useState<Config>(cached ?? { galeria_ativa: true, agenda_ativa: true });
+  const [config, setConfig] = useState<Config | null>(cached);
   useEffect(() => {
     getSiteConfig().then(setConfig);
   }, []);
-  return config;
+  return {
+    galeria_ativa: config?.galeria_ativa ?? true,
+    agenda_ativa: config?.agenda_ativa ?? true,
+    loaded: config !== null,
+  };
 }
