@@ -527,30 +527,40 @@ const GaleriaPublica = () => {
               />
             ) : (
               <div className="relative w-full h-full flex items-center justify-center" onClick={(e) => e.stopPropagation()}>
-                {/* Thumbnail nítida instantânea */}
-                {decodeThumbnail(lightbox.legenda) && (
-                  <img
-                    src={decodeThumbnail(lightbox.legenda)!}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute max-w-full max-h-full w-auto h-auto object-contain"
-                    style={{ opacity: imgLoaded ? 0 : 1, transition: "opacity 250ms ease-out" }}
-                  />
-                )}
-                {!imgLoaded && (
-                  <div className="absolute top-2 left-1/2 -translate-x-1/2">
-                    <Loader2 className="h-6 w-6 animate-spin text-white/70" />
-                  </div>
-                )}
-                <img
-                  src={lightbox.url_foto}
-                  alt={lightbox.titulo}
-                  className="relative max-w-full max-h-full w-auto h-auto object-contain"
-                  style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 250ms ease-out" }}
-                  onLoad={() => setImgLoaded(true)}
-                  decoding="async"
-                  fetchPriority="high"
-                />
+                {(() => {
+                  const thumb = decodeThumbnail(lightbox.legenda);
+                  return (
+                    <>
+                      {thumb && (
+                        <img
+                          src={thumb}
+                          alt=""
+                          aria-hidden="true"
+                          className="absolute max-w-full max-h-full w-auto h-auto object-contain"
+                          style={{ opacity: imgLoaded ? 0 : 1, transition: "opacity 250ms ease-out" }}
+                        />
+                      )}
+                      {!imgLoaded && (
+                        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10">
+                          <Loader2 className="h-6 w-6 animate-spin text-white/70" />
+                        </div>
+                      )}
+                      <img
+                        src={lightbox.url_foto}
+                        alt={lightbox.titulo}
+                        className="relative max-w-full max-h-full w-auto h-auto object-contain"
+                        style={
+                          thumb
+                            ? { opacity: imgLoaded ? 1 : 0, transition: "opacity 250ms ease-out" }
+                            : undefined
+                        }
+                        onLoad={() => setImgLoaded(true)}
+                        decoding="async"
+                        fetchPriority="high"
+                      />
+                    </>
+                  );
+                })()}
               </div>
             )}
           </div>
