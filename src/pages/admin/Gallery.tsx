@@ -112,12 +112,12 @@ const decodeImageSafe = async (file: File): Promise<{ bitmap: ImageBitmap | HTML
 };
 
 /**
- * Aggressive compression — Google Photos style "high quality" tier.
- * - Max 1440px longest side · WebP 0.70 / JPEG 0.78
- * - DSLR 25MB → ~150-260KB · Celular 5MB → ~120-220KB
- * - Mantém qualidade visual muito boa para tela cheia + zoom moderado.
+ * High-quality compression — preserves sharpness for fullscreen viewing.
+ * - Max 2560px longest side (4K-ready) · WebP 0.88 / JPEG 0.92
+ * - DSLR 25MB → ~600KB-1.2MB · Celular 5MB → ~400-800KB
+ * - Qualidade visual excelente, sem pixelização perceptível.
  */
-const compressImage = async (file: File, maxPx = 1440, jpegQuality = 0.78, webpQuality = 0.70): Promise<File> => {
+const compressImage = async (file: File, maxPx = 2560, jpegQuality = 0.92, webpQuality = 0.88): Promise<File> => {
   if (!file.type.startsWith("image/") || file.size < 200 * 1024) return file;
 
   let decoded;
