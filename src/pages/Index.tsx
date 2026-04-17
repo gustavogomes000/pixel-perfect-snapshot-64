@@ -6,6 +6,7 @@ import { useGoogleCalendar } from "@/hooks/useGoogleCalendar";
 
 import { supabase } from "@/lib/supabaseDb";
 import { getGaleriaAtiva } from "@/hooks/useGaleriaConfig";
+import { useAgendaConfig } from "@/hooks/useAgendaConfig";
 import Layout from "@/components/Layout";
 import WaveDivider from "@/components/WaveDivider";
 import ScrollReveal from "@/components/ScrollReveal";
@@ -57,7 +58,8 @@ const Index = () => {
   const [homeAlbuns, setHomeAlbuns] = useState<HomeAlbum[]>([]);
   const [galeriaAtiva, setGaleriaAtiva] = useState(false);
   const [heroImgLoaded, setHeroImgLoaded] = useState(false);
-  const { events: proximosEventos, loading: eventosLoading, error: eventosError } = useGoogleCalendar({ filter: "proximos", limit: 3 });
+  const { agendaAtiva } = useAgendaConfig();
+  const { events: proximosEventos, loading: eventosLoading, error: eventosError } = useGoogleCalendar({ filter: "proximos", limit: 3, enabled: agendaAtiva });
   const eventos = Array.isArray(proximosEventos) ? proximosEventos : [];
 
   useEffect(() => {
@@ -165,13 +167,15 @@ const Index = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.6, ease: "easeOut" }}
               >
-                <Link
-                  to="/agenda"
-                  className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:scale-105"
-                >
-                  <Calendar className="h-4 w-4" />
-                  Ver Agenda
-                </Link>
+                {agendaAtiva && (
+                  <Link
+                    to="/agenda"
+                    className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition-transform hover:scale-105"
+                  >
+                    <Calendar className="h-4 w-4" />
+                    Ver Agenda
+                  </Link>
+                )}
                 <a
                   href="https://wa.me/5562993237397?text=Ol%C3%A1%20Dra.%20Fernanda%20Sarelli"
                   target="_blank"
@@ -278,6 +282,7 @@ const Index = () => {
         </div>
       </section>
 
+      {agendaAtiva && (
       <section className="bg-secondary py-16 md:py-20">
         <div className="container">
           <ScrollReveal>
@@ -342,6 +347,7 @@ const Index = () => {
           </div>
         </div>
       </section>
+      )}
 
       {galeriaAtiva && homeAlbuns.length > 0 && (
       <section className="py-16 md:py-20">
