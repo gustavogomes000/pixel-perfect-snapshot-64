@@ -615,7 +615,7 @@ const GaleriaPublica = () => {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </Layout>
   );
 };
