@@ -680,7 +680,7 @@ const Gallery = () => {
           const thumbSignedUrl = signedUrlMap.get(thumbPath);
           if (thumbSignedUrl) {
             try {
-              const thumbBlob = await generateThumbnail(item.file, 480, 0.55);
+              const thumbBlob = await generateThumbnail(item.file);
               if (thumbBlob) {
                 const thumbRes = await uploadWithRetry(thumbSignedUrl, thumbBlob, thumbBlob.type || "image/webp", 2);
                 if (thumbRes.ok) {
