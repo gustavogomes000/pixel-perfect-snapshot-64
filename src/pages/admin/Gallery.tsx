@@ -546,82 +546,73 @@ const Gallery = () => {
 
     toast.loading(`Enviando ${items.length} arquivo(s)...`, { id: toastId });
 
-    // 3. Upload files in parallel (concurrency 3)
+    // 3. Upload files SEQUENTIALLY (concurrency = 1) for max stability + retry on each
     let done = 0;
     const successfulPhotos: Array<Record<string, unknown>> = [];
-    const CONCURRENCY = 3;
+    const failedFiles: string[] = [];
 
-    const chunks: typeof prepared[] = [];
-    for (let i = 0; i < prepared.length; i += CONCURRENCY) {
-      chunks.push(prepared.slice(i, i + CONCURRENCY));
-    }
+    for (let idx = 0; idx < prepared.length; idx++) {
+      const item = prepared[idx];
+      const mainPath = allPaths[idx];
+      const thumbPath = thumbPaths[idx];
+      const signedUrl = signedUrlMap.get(mainPath);
 
-    for (const chunk of chunks) {
-      await Promise.allSettled(
-        chunk.map(async (item, chunkIdx) => {
-          const idx = prepared.indexOf(item);
-          const mainPath = allPaths[idx];
-          const thumbPath = thumbPaths[idx];
-          const signedUrl = signedUrlMap.get(mainPath);
+      if (!signedUrl) {
+        failedFiles.push(item.file.name);
+        done++;
+        setUploadProgress(Math.round((done / prepared.length) * 100));
+        continue;
+      }
 
-          if (!signedUrl) {
-            toast.error(`Sem URL para "${item.file.name}"`);
-            done++;
-            setUploadProgress(Math.round((done / prepared.length) * 100));
-            return;
-          }
+      try {
+        const uploadRes = await uploadWithRetry(
+          signedUrl,
+          item.fileToUpload,
+          item.fileToUpload.type || "application/octet-stream",
+        );
 
-          // Upload main file
-          const uploadRes = await fetch(signedUrl, {
-            method: "PUT",
-            headers: { "Content-Type": item.fileToUpload.type || "application/octet-stream" },
-            body: item.fileToUpload,
-          });
-
-          if (!uploadRes.ok) {
-            toast.error(`Erro: "${item.file.name}" (${uploadRes.status})`);
-            done++;
-            setUploadProgress(Math.round((done / prepared.length) * 100));
-            return;
-          }
-
-          const { data: urlData } = cloudSupabase.storage.from("galeria").getPublicUrl(mainPath);
-
-          // Upload thumbnail if needed
-          let legendaBase: string | null = null;
-          if (item.isVideo && item.thumbnailDataUrl && thumbPath) {
-            const thumbSignedUrl = signedUrlMap.get(thumbPath);
-            if (thumbSignedUrl) {
-              try {
-                const res = await fetch(item.thumbnailDataUrl);
-                const blob = await res.blob();
-                const thumbRes = await fetch(thumbSignedUrl, {
-                  method: "PUT",
-                  headers: { "Content-Type": "image/jpeg" },
-                  body: blob,
-                });
-                if (thumbRes.ok) {
-                  const { data: thumbUrl } = cloudSupabase.storage.from("galeria").getPublicUrl(thumbPath);
-                  legendaBase = `[tn:${thumbUrl.publicUrl}]`;
-                }
-              } catch { /* skip thumbnail */ }
-            }
-          }
-
-          const legendaWithFp = encodeFocalPoint(legendaBase, item.focalX, item.focalY, item.zoom);
-          successfulPhotos.push({
-            titulo: item.file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
-            url_foto: urlData.publicUrl,
-            album_id: selectedAlbum,
-            visivel: true,
-            legenda: legendaWithFp || null,
-          });
-
+        if (!uploadRes.ok) {
+          failedFiles.push(`${item.file.name} (${uploadRes.status})`);
           done++;
           setUploadProgress(Math.round((done / prepared.length) * 100));
           toast.loading(`Enviando… ${done}/${prepared.length}`, { id: toastId });
-        })
-      );
+          continue;
+        }
+
+        const { data: urlData } = cloudSupabase.storage.from("galeria").getPublicUrl(mainPath);
+
+        let legendaBase: string | null = null;
+        if (item.isVideo && item.thumbnailDataUrl && thumbPath) {
+          const thumbSignedUrl = signedUrlMap.get(thumbPath);
+          if (thumbSignedUrl) {
+            try {
+              const res = await fetch(item.thumbnailDataUrl);
+              const blob = await res.blob();
+              const thumbRes = await uploadWithRetry(thumbSignedUrl, blob, "image/jpeg", 2);
+              if (thumbRes.ok) {
+                const { data: thumbUrl } = cloudSupabase.storage.from("galeria").getPublicUrl(thumbPath);
+                legendaBase = `[tn:${thumbUrl.publicUrl}]`;
+              }
+            } catch { /* thumb opcional */ }
+          }
+        }
+
+        const legendaWithFp = encodeFocalPoint(legendaBase, item.focalX, item.focalY, item.zoom);
+        successfulPhotos.push({
+          titulo: item.file.name.replace(/\.[^/.]+$/, "").replace(/[-_]/g, " "),
+          url_foto: urlData.publicUrl,
+          album_id: selectedAlbum,
+          visivel: true,
+          legenda: legendaWithFp || null,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "erro";
+        failedFiles.push(`${item.file.name} (${msg})`);
+      }
+
+      done++;
+      setUploadProgress(Math.round((done / prepared.length) * 100));
+      toast.loading(`Enviando… ${done}/${prepared.length}`, { id: toastId });
     }
 
     // 4. Batch insert all photos in a single DB call
@@ -639,6 +630,11 @@ const Gallery = () => {
 
     if (successfulPhotos.length > 0) {
       toast.success(`✅ ${successfulPhotos.length} arquivo(s) enviado(s) com sucesso!`);
+    }
+    if (failedFiles.length > 0) {
+      toast.error(`${failedFiles.length} falhou(aram). Tente reenviar: ${failedFiles.slice(0, 3).join(", ")}${failedFiles.length > 3 ? "…" : ""}`, { duration: 8000 });
+    }
+    if (successfulPhotos.length > 0) {
       await loadData();
     }
   };
