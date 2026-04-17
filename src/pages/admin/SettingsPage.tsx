@@ -80,20 +80,8 @@ const SettingsPage = () => {
   };
 
   const saveConfig = async (chave: string, valor: boolean) => {
-    if (!apiToken) throw new Error("API token vazio. Gere um token primeiro.");
-    const res = await fetch(`${SUPABASE_URL}/functions/v1/site-config`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        apikey: SUPABASE_ANON_KEY,
-        "x-api-token": apiToken,
-      },
-      body: JSON.stringify({ chave, valor }),
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || "save failed");
-    }
+    const data = await painelApi({ action: "set-config", chave, valor });
+    if (data?.error) throw new Error(data.error);
     invalidateSiteConfig();
   };
 
