@@ -529,25 +529,26 @@ const GaleriaPublica = () => {
               />
             ) : (
               <div className="relative w-full bg-black flex items-center justify-center" style={{ minHeight: "60vh", maxHeight: "82vh" }}>
-                {/* LQIP placeholder — thumbnail aparece instantaneamente enquanto a foto full carrega */}
-                {!imgLoaded && decodeThumbnail(lightbox.legenda) && (
+                {/* Thumbnail nítida aparece INSTANTANEAMENTE enquanto a full carrega */}
+                {decodeThumbnail(lightbox.legenda) && (
                   <img
                     src={decodeThumbnail(lightbox.legenda)!}
                     alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-contain blur-2xl scale-110 opacity-60"
+                    className="absolute max-w-full max-h-[82vh] w-auto h-auto object-contain"
+                    style={{ opacity: imgLoaded ? 0 : 1, transition: "opacity 250ms ease-out" }}
                   />
                 )}
                 {!imgLoaded && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Loader2 className="h-10 w-10 animate-spin text-white/70" />
+                  <div className="absolute top-4 right-4">
+                    <Loader2 className="h-6 w-6 animate-spin text-white/70" />
                   </div>
                 )}
                 <img
                   src={lightbox.url_foto}
                   alt={lightbox.titulo}
                   className="relative max-w-full max-h-[82vh] w-auto h-auto object-contain"
-                  style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 200ms ease-out" }}
+                  style={{ opacity: imgLoaded ? 1 : 0, transition: "opacity 250ms ease-out" }}
                   onLoad={() => setImgLoaded(true)}
                   decoding="async"
                   fetchPriority="high"
