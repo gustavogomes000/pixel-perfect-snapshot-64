@@ -244,6 +244,21 @@ const GaleriaPublica = () => {
     return () => { document.body.style.overflow = ""; };
   }, [lightbox]);
 
+  // Prefetch next/prev images for instant lightbox navigation
+  useEffect(() => {
+    if (!lightbox) return;
+    const idx = filteredFotos.findIndex(f => f.id === lightbox.id);
+    if (idx < 0) return;
+    [idx - 1, idx + 1].forEach(i => {
+      const f = filteredFotos[i];
+      if (f && !isVideoUrl(f.url_foto)) {
+        const img = new Image();
+        img.decoding = "async";
+        img.src = f.url_foto;
+      }
+    });
+  }, [lightbox, filteredFotos]);
+
   // Photo count per album
   const albumPhotoCounts = new Map<string, number>();
   fotos.forEach(f => {
