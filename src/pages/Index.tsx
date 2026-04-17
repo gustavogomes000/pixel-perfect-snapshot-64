@@ -369,8 +369,12 @@ const Index = () => {
               <div className="absolute -inset-2 sm:-inset-3 rounded-[2rem] bg-primary/25 opacity-70 blur-xl -z-10" />
               {/* Moldura branca com borda rosa dupla */}
               <div className="relative rounded-[1.5rem] bg-card p-1.5 sm:p-2 shadow-2xl ring-2 ring-primary ring-offset-2 ring-offset-background">
-                {/* Mesma foto cropada em todas telas, aspect bate com a imagem (sem sobras, sem cortes) */}
-                <div className="relative w-full overflow-hidden rounded-[1rem] banner-reveal" style={{ aspectRatio: "3936 / 1243" }}>
+                {/* Mobile maior (aspect mais alto), desktop usa o aspect natural da foto */}
+                <div
+                  className="relative w-full overflow-hidden rounded-[1rem] banner-reveal aspect-[16/9] sm:aspect-auto"
+                  style={{ ["--banner-ratio" as any]: "3936 / 1243" }}
+                >
+                  <style>{`@media (min-width: 640px){.banner-natural{aspect-ratio:3936/1243}}`}</style>
                   <img
                     src={bannerPalanqueMobile}
                     alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
