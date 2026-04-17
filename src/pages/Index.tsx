@@ -12,6 +12,7 @@ import WaveDivider from "@/components/WaveDivider";
 import ScrollReveal from "@/components/ScrollReveal";
 import logoSarelli from "@/assets/logo-sarelli.png";
 import logoNovo from "@/assets/logo-novo-partido.png";
+import bannerPalanque from "@/assets/banner-palanque.jpg";
 
 const PHOTO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/699400706d955b03c8c19827/16e72069d_WhatsAppImage2026-02-17at023641.jpeg";
 
@@ -345,6 +346,35 @@ const Index = () => {
               <ExternalLink className="h-4 w-4" />
             </Link>
           </div>
+        </div>
+      </section>
+      )}
+
+      {!agendaAtiva && (
+      <section className="bg-secondary py-16 md:py-20">
+        <div className="container">
+          <ScrollReveal>
+            <div className="text-center mb-8">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">🤝 Movimento em ação</p>
+              <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Juntos por um Novo Tempo</h2>
+              <p className="mt-3 text-muted-foreground max-w-xl mx-auto">
+                Lideranças, comunidade e compromisso lado a lado.
+              </p>
+            </div>
+          </ScrollReveal>
+          <ScrollReveal>
+            <div className="relative max-w-5xl mx-auto rounded-3xl overflow-hidden shadow-soft border bg-card">
+              <div className="aspect-[16/9] sm:aspect-[21/9] overflow-hidden">
+                <img
+                  src={bannerPalanque}
+                  alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
+                  loading="lazy"
+                  className="w-full h-full object-cover scale-[1.45] sm:scale-[1.35] object-[center_38%] transition-transform duration-700 hover:scale-[1.5]"
+                />
+              </div>
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
+            </div>
+          </ScrollReveal>
         </div>
       </section>
       )}
