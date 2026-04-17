@@ -401,45 +401,46 @@ const Index = () => {
                 {display.map((item, i) => {
                   const isVideo = (item.tipo || "foto") === "video";
                   return (
-                    <button
-                      key={item.id}
-                      onClick={() => openLightbox(item)}
-                      className="group text-left block overflow-hidden rounded-xl sm:rounded-2xl border bg-card transition-shadow hover:shadow-lg active:scale-[0.98] w-full"
-                    >
-                      <div className="aspect-square overflow-hidden relative bg-muted flex items-center justify-center">
-                        {isVideo ? (
-                          <>
-                            <video
-                              src={item.url_foto}
-                              className="h-full w-full object-contain"
-                              muted
-                              preload={decodeThumbnail(item.legenda) ? "none" : "metadata"}
-                              playsInline
-                              poster={decodeThumbnail(item.legenda) || undefined}
-                            />
-                            <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                              <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_0_4px_rgba(255,255,255,0.35)] group-hover:scale-110 group-hover:shadow-[0_0_0_6px_rgba(255,255,255,0.45)] transition-all duration-200">
-                                <Play className="h-5 w-5 sm:h-6 sm:w-6 text-white ml-0.5" fill="white" />
+                    <ParallaxRevealCard key={item.id} delay={(i % 3) * 80}>
+                      <button
+                        onClick={() => openLightbox(item)}
+                        className="group text-left block overflow-hidden rounded-xl sm:rounded-2xl border bg-card transition-shadow hover:shadow-lg active:scale-[0.98] w-full"
+                      >
+                        <div className="aspect-square overflow-hidden relative bg-muted flex items-center justify-center">
+                          {isVideo ? (
+                            <>
+                              <video
+                                src={item.url_foto}
+                                className="h-full w-full object-contain"
+                                muted
+                                preload={decodeThumbnail(item.legenda) ? "none" : "metadata"}
+                                playsInline
+                                poster={decodeThumbnail(item.legenda) || undefined}
+                              />
+                              <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                <div className="h-12 w-12 sm:h-14 sm:w-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_0_4px_rgba(255,255,255,0.35)] group-hover:scale-110 group-hover:shadow-[0_0_0_6px_rgba(255,255,255,0.45)] transition-all duration-200">
+                                  <Play className="h-5 w-5 sm:h-6 sm:w-6 text-white ml-0.5" fill="white" />
+                                </div>
                               </div>
-                            </div>
-                          </>
-                        ) : (
-                          <img
-                            src={item.url_foto}
-                            alt={item.legenda ? decodeFocalPoint(item.legenda).cleanLegenda || item.titulo : item.titulo}
-                            className="h-full w-full object-contain"
-                            loading={i < 4 ? "eager" : "lazy"}
-                            decoding="async"
-                          />
-                        )}
-                      </div>
-                      <div className="p-2 sm:p-3">
-                        <p className="text-xs sm:text-sm font-medium truncate">{item.titulo}</p>
-                        {item.evento && (
-                          <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5">{item.evento}</p>
-                        )}
-                      </div>
-                    </button>
+                            </>
+                          ) : (
+                            <img
+                              src={item.url_foto}
+                              alt={item.legenda ? decodeFocalPoint(item.legenda).cleanLegenda || item.titulo : item.titulo}
+                              className="h-full w-full object-contain"
+                              loading={i < 4 ? "eager" : "lazy"}
+                              decoding="async"
+                            />
+                          )}
+                        </div>
+                        <div className="p-2 sm:p-3">
+                          <p className="text-xs sm:text-sm font-medium truncate">{item.titulo}</p>
+                          {item.evento && (
+                            <p className="text-[10px] sm:text-xs text-muted-foreground truncate mt-0.5">{item.evento}</p>
+                          )}
+                        </div>
+                      </button>
+                    </ParallaxRevealCard>
                   );
                 })}
               </div>

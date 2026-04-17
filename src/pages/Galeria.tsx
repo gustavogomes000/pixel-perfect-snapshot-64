@@ -4,6 +4,7 @@ import { Image as ImageIcon, Play, X, Loader2, Share2 } from "lucide-react";
 import { supabase } from "@/lib/supabaseDb";
 import { toast } from "sonner";
 import Layout from "@/components/Layout";
+import ParallaxRevealCard from "@/components/ParallaxRevealCard";
 import { decodeFocalPoint, getFocalStyle, decodeThumbnail } from "@/components/admin/FocalPointPicker";
 
 interface Album {
@@ -263,56 +264,57 @@ const GaleriaPublica = () => {
             {filteredFotos.map((foto, i) => {
               const isVideo = getFotoTipo(foto.url_foto) === "video";
               return (
-                <div
-                  key={foto.id}
-                  className="rounded-2xl overflow-hidden border bg-card group cursor-pointer h-full flex flex-col active:scale-[0.97] transition-transform"
-                  onClick={() => openLightbox(foto)}
-                >
-                  {isVideo ? (
-                    <div className="relative w-full aspect-[3/4] bg-muted">
-                      <video
-                        src={foto.url_foto}
-                        className="w-full h-full object-cover"
-                        muted
-                        preload="none"
-                        playsInline
-                        poster={decodeThumbnail(foto.legenda) || undefined}
-                      />
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-                        <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_0_4px_rgba(255,255,255,0.35)] group-hover:scale-110 group-hover:shadow-[0_0_0_6px_rgba(255,255,255,0.45)] transition-all duration-200">
-                          <Play className="h-6 w-6 text-white ml-0.5" fill="white" />
+                <ParallaxRevealCard key={foto.id} delay={(i % 4) * 60}>
+                  <div
+                    className="rounded-2xl overflow-hidden border bg-card group cursor-pointer h-full flex flex-col active:scale-[0.97] transition-transform"
+                    onClick={() => openLightbox(foto)}
+                  >
+                    {isVideo ? (
+                      <div className="relative w-full aspect-[3/4] bg-muted">
+                        <video
+                          src={foto.url_foto}
+                          className="w-full h-full object-cover"
+                          muted
+                          preload="none"
+                          playsInline
+                          poster={decodeThumbnail(foto.legenda) || undefined}
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                          <div className="h-14 w-14 rounded-full bg-primary flex items-center justify-center shadow-[0_0_0_4px_rgba(255,255,255,0.35)] group-hover:scale-110 group-hover:shadow-[0_0_0_6px_rgba(255,255,255,0.45)] transition-all duration-200">
+                            <Play className="h-6 w-6 text-white ml-0.5" fill="white" />
+                          </div>
                         </div>
                       </div>
+                    ) : (
+                      <div className="w-full aspect-[3/4] bg-muted overflow-hidden">
+                        <img
+                          src={foto.url_foto}
+                          alt={foto.titulo}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          style={getFocalStyle(foto.legenda)}
+                          loading={i < 6 ? "eager" : "lazy"}
+                          decoding="async"
+                        />
+                      </div>
+                    )}
+                    <div className="p-3 mt-auto">
+                      <div className="flex items-center gap-2">
+                        {isVideo && (
+                          <span className="text-[10px] font-semibold uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
+                            Vídeo
+                          </span>
+                        )}
+                        <p className="text-sm font-medium truncate">{foto.titulo}</p>
+                      </div>
+                      {foto.legenda && (() => {
+                        const { cleanLegenda } = decodeFocalPoint(foto.legenda);
+                        return cleanLegenda ? (
+                          <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{cleanLegenda}</p>
+                        ) : null;
+                      })()}
                     </div>
-                  ) : (
-                    <div className="w-full aspect-[3/4] bg-muted overflow-hidden">
-                      <img
-                        src={foto.url_foto}
-                        alt={foto.titulo}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                        style={getFocalStyle(foto.legenda)}
-                        loading={i < 6 ? "eager" : "lazy"}
-                        decoding="async"
-                      />
-                    </div>
-                  )}
-                  <div className="p-3 mt-auto">
-                    <div className="flex items-center gap-2">
-                      {isVideo && (
-                        <span className="text-[10px] font-semibold uppercase bg-primary/10 text-primary px-1.5 py-0.5 rounded shrink-0">
-                          Vídeo
-                        </span>
-                      )}
-                      <p className="text-sm font-medium truncate">{foto.titulo}</p>
-                    </div>
-                    {foto.legenda && (() => {
-                      const { cleanLegenda } = decodeFocalPoint(foto.legenda);
-                      return cleanLegenda ? (
-                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{cleanLegenda}</p>
-                      ) : null;
-                    })()}
                   </div>
-                </div>
+                </ParallaxRevealCard>
               );
             })}
           </div>
