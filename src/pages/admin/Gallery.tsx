@@ -589,11 +589,11 @@ const Gallery = () => {
     const toastId = `upload-${Date.now()}`;
     toast.loading(`Preparando ${items.length} arquivo(s)...`, { id: toastId });
 
-    // 1. Compress all images in parallel
+    // 1. Compress all images in parallel — NEVER fails (falls back to original on any error)
     const prepared = await Promise.all(
       items.map(async (item) => {
         const isVideo = isVideoFile(item.file);
-        const fileToUpload = isVideo ? item.file : await compressImage(item.file);
+        const fileToUpload = isVideo ? item.file : await compressImageSafe(item.file);
         return { ...item, fileToUpload, isVideo };
       })
     );
