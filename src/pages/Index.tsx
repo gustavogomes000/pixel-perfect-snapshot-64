@@ -363,16 +363,15 @@ const Index = () => {
             </div>
           </ScrollReveal>
           <ScrollReveal>
-            <div className="relative max-w-5xl mx-auto rounded-3xl overflow-hidden shadow-soft border bg-card">
-              <div className="aspect-[16/9] sm:aspect-[21/9] overflow-hidden">
-                <img
-                  src={bannerPalanque}
-                  alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
-                  loading="lazy"
-                  className="w-full h-full object-cover scale-[1.45] sm:scale-[1.35] object-[center_38%] transition-transform duration-700 hover:scale-[1.5]"
-                />
-              </div>
-              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-transparent" />
+            <div className="relative max-w-6xl mx-auto rounded-3xl overflow-hidden shadow-soft border bg-gradient-to-br from-primary/5 to-secondary">
+              {/* Mostra a foto inteira sem cortar ninguém — letterbox suave nas laterais quando necessário */}
+              <img
+                src={bannerPalanque}
+                alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
+                loading="lazy"
+                className="w-full h-auto object-contain"
+              />
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/4 bg-gradient-to-t from-background/30 to-transparent" />
             </div>
           </ScrollReveal>
         </div>
