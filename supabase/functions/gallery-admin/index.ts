@@ -209,7 +209,7 @@ Deno.serve(async (req) => {
       case "create-upload-urls": {
         const { paths } = body;
         if (!Array.isArray(paths) || paths.length === 0) return json({ success: false, error: "Missing 'paths' array" }, 400);
-        if (paths.length > 50) return json({ success: false, error: "Max 50 paths" }, 400);
+        if (paths.length > 200) return json({ success: false, error: "Max 200 paths" }, 400);
         for (const p of paths) {
           if (typeof p !== "string" || p.includes("..") || p.startsWith("/")) {
             return json({ success: false, error: `Invalid path: ${p}` }, 400);
