@@ -760,6 +760,21 @@ const Gallery = () => {
     setShowUploadPreview(false);
   };
 
+  const removePendingUpload = (index: number) => {
+    setPendingUploads(prev => {
+      const removed = prev[index];
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 0) {
+        setShowUploadPreview(false);
+        setPreviewIndex(0);
+      } else {
+        setPreviewIndex(idx => Math.min(idx, next.length - 1));
+      }
+      return next;
+    });
+  };
+
   const handleFileDrop = async (e: React.DragEvent) => {
     e.preventDefault();
     setDragOver(false);
