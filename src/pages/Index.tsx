@@ -366,9 +366,9 @@ const Index = () => {
             <div className="relative max-w-6xl mx-auto group">
               {/* Glow rosa suave */}
               <div className="absolute -inset-1.5 sm:-inset-2 rounded-[2rem] bg-primary/20 opacity-60 blur-lg -z-10" />
-              {/* Moldura premium com borda rosa do site */}
-              <div className="relative rounded-[1.75rem] overflow-hidden shadow-xl ring-2 ring-primary/60 bg-card p-1.5 sm:p-2">
-                <div className="relative w-full aspect-[4/5] sm:aspect-[16/8] lg:aspect-[16/7] overflow-hidden rounded-[1.4rem] banner-reveal">
+              {/* Moldura toda rosa, sem branco */}
+              <div className="relative rounded-[1.75rem] overflow-hidden shadow-xl ring-2 ring-primary/70 outline outline-2 outline-primary/40 outline-offset-0">
+                <div className="relative w-full aspect-[4/5] sm:aspect-[16/8] lg:aspect-[16/7] overflow-hidden banner-reveal">
                   <img
                     src={bannerPalanque}
                     alt="Doutora Fernanda Sarelli ao lado de lideranças e apoiadores no palco"
