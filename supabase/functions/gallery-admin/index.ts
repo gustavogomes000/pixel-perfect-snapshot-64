@@ -223,7 +223,7 @@ Deno.serve(async (req) => {
         const cloudClient = createClient(CLOUD_URL, CLOUD_SERVICE_KEY);
         const results = await Promise.all(
           paths.map(async (p: string) => {
-            const { data, error } = await cloudClient.storage.from("galeria").createSignedUploadUrl(p);
+            const { data, error } = await cloudClient.storage.from("galeria").createSignedUploadUrl(p, { upsert: true });
             if (error) return { path: p, error: error.message };
             return { path: p, signedUrl: data.signedUrl, token: data.token };
           })
