@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { useSearchParams } from "react-router-dom";
 import { Download, ChevronLeft, ChevronRight } from "lucide-react";
 import { Image as ImageIcon, Play, X, Loader2, Share2 } from "lucide-react";
@@ -465,7 +466,7 @@ const GaleriaPublica = () => {
       </section>
 
       {/* Lightbox */}
-      {lightbox && (
+      {lightbox && createPortal(
         <div
           className="fixed inset-0 z-[100] bg-black flex flex-col"
           onClick={closeLightbox}
@@ -614,7 +615,7 @@ const GaleriaPublica = () => {
             </div>
           </div>
         </div>
-      )}
+      , document.body)}
     </Layout>
   );
 };
