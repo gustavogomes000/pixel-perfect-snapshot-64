@@ -370,7 +370,7 @@ const Index = () => {
               {/* Moldura toda rosa, sem branco */}
               <div className="relative rounded-[1.75rem] overflow-hidden shadow-xl ring-2 ring-primary/70 outline outline-2 outline-primary/40 outline-offset-0">
                 {/* Mobile/tablet: foto inteira sem cortar (contain). Desktop: cover focado no palco */}
-                <div className="relative w-full aspect-[16/7] sm:aspect-[16/8] lg:aspect-[16/7] overflow-hidden banner-reveal bg-primary/10">
+                <div className="relative w-full aspect-[16/5] sm:aspect-[16/6] lg:aspect-[16/7] overflow-hidden banner-reveal bg-primary/10">
                   <picture>
                     <source media="(min-width: 1024px)" srcSet={bannerPalanque} />
                     <img
